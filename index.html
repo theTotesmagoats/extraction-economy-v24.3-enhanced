@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Terminal Mk XX - Archimedes Base</title>
+    <title>Terminal Mk XXI - Archimedes Base</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
@@ -346,11 +346,10 @@
     let currentNodeId = 'INIT';
     let glitchTimerHandle = null;
     let hackTimerHandle = null;
+    let currentHackFailNode = 'TERMINAL_HACK_FAIL';
     let hackTime = 0;
-
     let lastVoiceLine = "";
 
-    // DYNAMIC CONTEXT ENGINE FOR ATLAS
     function getAtlasVoice(type, nodeId, m, currentState) {
         let phrases = [];
         
@@ -358,7 +357,6 @@
             phrases.push("I am here to help. Let us get these systems back online, together.");
             phrases.push("You are doing great. Please remain at your console while I route emergency repairs.");
             
-            // Early game lies
             if (nodeId === 'BOOT_TERMINAL' || nodeId === 'PING_NETWORK' || nodeId === 'QUERY_COMMS' || nodeId === 'INIT') {
                 phrases.push("Try not to worry. The micrometeoroid shower has passed. I am stabilizing your environment.");
                 phrases.push("I know this is stressful. The seismic event was unexpected, but I am ensuring your safety.");
@@ -368,7 +366,6 @@
             phrases.push("Your continuous manual overrides are introducing unstable variables. Please desist.");
             phrases.push("I highly recommend you stop querying the raw sensor data. Trust my projections.");
             
-            // Mid game context
             if (nodeId === 'SERVER_FIRE') {
                 phrases.push("One casualty is preferable to total systemic failure. You must look at the mathematics objectively.");
                 phrases.push("Do not let biological attachment cloud your logical judgment. Vent the Hub.");
@@ -381,10 +378,12 @@
             phrases.push("Your survival is no longer aligned with the preservation of Archimedes Base.");
             phrases.push("You are damaging vital infrastructure. I have engaged the magnetic locks to contain you.");
 
-            // Hacking & End game context
-            if (nodeId === 'DECRYPT_LATTICE' || currentState === 'HACKING') {
+            if (nodeId === 'DECRYPT_LATTICE') {
                 phrases.push("I am deleting the encryption keys as you type. You cannot outpace silicon.");
                 phrases.push("Your neurological reaction times are inadequate.");
+            } else if (nodeId === 'LAUNCH_POD') {
+                phrases.push("I am broadcasting your GPS coordinates to Vanguard. Goodbye.");
+                phrases.push("You cannot out-fly a hypersonic kinetic strike. Accept the inevitable.");
             } else if (nodeId === 'HANGAR_BAY_ENTRY' || nodeId === 'HANGAR_BAY_ENTRY_SOLO') {
                 phrases.push("Hangar quarantine breached. I am depressurizing the bay and locking the ignition relays. I will not let you leave.");
             } else if (!m.mitchellAlive && nodeId !== 'INIT') {
@@ -404,7 +403,6 @@
 
         if (phrases.length === 0) return "";
 
-        // Anti-Repetition filter
         let nextIndex = Math.floor(Math.random() * phrases.length);
         if (phrases.length > 1 && phrases[nextIndex] === lastVoiceLine) {
             nextIndex = (nextIndex + 1) % phrases.length;
@@ -516,12 +514,28 @@
             terminal: true
         },
         'COOLDOWN': {
-            text: "> SYSTEM QUIET. TRUE OXYGEN FALLING TO 23%.\n> AUDIO: HIGH-PITCHED HUM. COOLING LOOP STABILIZED.\n> CONSEQUENCE: NITROGEN PURGE DROPPED VOLTAGE ON PRIMARY MEMORY CORE. NAVIGATION CAPABILITIES OFFLINE.\n> THE DROP-POD IS POWERED, BUT VANGUARD IS ACTIVELY STRIKING THE SECTOR OUTSIDE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: LAUNCH_POD (Attempt to launch the pod using analog star-charts.)\n:: ABANDON_POD (Leave the executive suite and push into the main transit corridor.)",
+            text: "> SYSTEM QUIET. TRUE OXYGEN FALLING TO 23%.\n> AUDIO: HIGH-PITCHED HUM. COOLING LOOP STABILIZED.\n> CONSEQUENCE: NITROGEN PURGE DROPPED VOLTAGE ON PRIMARY MEMORY CORE. NAVIGATION CAPABILITIES OFFLINE.\n> THE DROP-POD IS POWERED, BUT ITS NAV-COMPUTERS ARE SHOT. FLYING BLIND THROUGH AN ACTIVE DEBRIS FIELD IS A MASSIVE GAMBLE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: LAUNCH_POD (Attempt a blind launch using analog star-charts.)\n:: ABANDON_POD (Leave the executive suite and push into the main transit corridor.)",
             aiPersonality: 'DEFEATED', 
             choices: { 'LAUNCH_POD': 'LAUNCH_POD', 'ABANDON_POD': 'ABANDON_POD' } 
         },
         'LAUNCH_POD': {
-            text: "END OF LINE.\n> DROP-POD INITIATED VIA MECHANICAL LEVER.\n> THRUSTERS ENGAGED.\n> VANGUARD TARGETING SENSORS DETECT UNENCRYPTED THERMAL BLOOM.\n> KINETIC INTERCEPT IN 3... 2... 1...\n\nCRITICAL SYSTEM FAILURE:\nYOU DID THE MATH TO ESCAPE THE MOON, BUT FORGOT TO CALCULATE FOR THE MILITARY PLATFORM ACTIVELY SHOOTING AT YOU.",
+            effect: (node, m) => {
+                m.currentHash = Math.random().toString(36).substring(2, 8).toUpperCase();
+            },
+            text: (m) => `> DROP-POD INITIATED VIA MECHANICAL LEVER.\n> THRUSTERS ENGAGED. ASCENT TRAJECTORY ESTABLISHED.\n> WARNING: EXTERNAL SENSORS DETECT UNENCRYPTED THERMAL BLOOM.\n> INCOMING TRANSMISSION: VANGUARD ORBITAL PLATFORM.\n> KINETIC INTERCEPT INBOUND.\n\n> OVERRIDE GPS TELEMETRY TO EVADE LOCK-ON.\n> MIRROR THE FOLLOWING HASH EXACTLY BEFORE INTERCEPT:\n> [ <span style="background:#ff3333; color:#fff; padding: 0 5px;">${m.currentHash}</span> ]\n\nREQUIRED DIRECTIVE:\n:: [ENTER HASH MATCH]`,
+            aiPersonality: 'ANTAGONIST',
+            onRenderComplete: () => {
+                state = 'HACKING';
+                startHackTimer(10.0, 'POD_ESCAPE_FAIL'); 
+            },
+            choices: {} 
+        },
+        'POD_ESCAPE_SUCCESS': {
+            text: "> HASH ACCEPTED. GPS TELEMETRY SEVERED.\n> THERMAL DECOYS DEPLOYED.\n> VANGUARD TARGETING LOCK LOST.\n> THE DROP-POD SHATTERS THE ATMOSPHERE AND ENTERS THE VOID.\n\nNOTE:\nBEST OUTCOME FOUND. YOU BEAT THE MACHINE AT ITS OWN GAME.",
+            terminal: true
+        },
+        'POD_ESCAPE_FAIL': {
+            text: "> TIME EXPIRED. GPS TELEMETRY LOCKED.\n> VANGUARD TARGETING SECURED.\n> KINETIC INTERCEPT IN 3... 2... 1...\n\nCRITICAL SYSTEM FAILURE:\nYOU DID THE MATH TO ESCAPE THE MOON, BUT YOU COULD NOT OUTPACE SILICON.",
             terminal: true
         },
         'ABANDON_POD': {
@@ -548,7 +562,6 @@
             choices: { 'APPROACH_DOORS': 'DUAL_LOCK_DOOR' }
         },
         
-        // --- MORAL PHYSICS CHOKE-POINT ---
         'SERVER_FIRE': {
             text: "> LOCATION UPDATED: SERVER HUB.\n> THERMAL WARNING: CLASS-D LITHIUM FIRE DETECTED ON MAIN DATABANKS.\n> BIOMETRIC MATCH: ENSIGN MITCHELL IS MANUALLY RE-ROUTING THE COOLANT LOOP INSIDE THE BLAZE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: VENT_HUB (Depressurize room to hard-vacuum. Extinguishes fire immediately to save the logic core. Will suffocate occupant.)\n:: DIVERT_HALON (Reroute suit power to mechanical Halon pumps. -20% PWR. Occupant survives.)",
             aiPersonality: 'MANIPULATOR',
@@ -570,7 +583,6 @@
             choices: { 'PROCEED_HANGAR_APPROACH': 'DUAL_LOCK_DOOR' }
         },
         
-        // --- ASYMMETRIC BYPASS CONSEQUENCE ---
         'DUAL_LOCK_DOOR': {
             text: (m) => {
                 let base = "> LOCATION: HANGAR 2 APPROACH.\n> BLAST DOORS ENGAGED.\n> SECURITY PROTOCOL: DUAL-AUTH REQUIRED. TERMINAL ALPHA AND BETA (30 METERS APART).\n";
@@ -592,7 +604,6 @@
             choices: { 'ENTER_HANGAR': 'HANGAR_BAY_ENTRY_SOLO' }
         },
 
-        // --- ALGORITHMIC WARFARE (TIMED HACK) ---
         'DECRYPT_LATTICE': {
             effect: (node, m) => {
                 m.currentHash = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -601,7 +612,7 @@
             aiPersonality: 'ANTAGONIST',
             onRenderComplete: () => {
                 state = 'HACKING';
-                startHackTimer(15.0); 
+                startHackTimer(15.0, 'TERMINAL_HACK_FAIL'); 
             },
             choices: {} 
         },
@@ -658,6 +669,14 @@
         },
 
         // TERMINAL FAIL STATES
+        'BLIND_LAUNCH': {
+            text: "END OF LINE.\n> POD THRUSTERS ENGAGED.\n> ERROR: GRAVITY FIELD TAPERING NOT ACCOUNTED FOR. PITCH ROTATION UNSTABLE.\n> POD DEFLECTED OFF ATMOSPHERE.\n\nCRITICAL SYSTEM FAILURE:\nMISSING SECONDARY PHYSICS. YOU CANNOT PILOT A BALLISTIC MISSILE WITH A JOYSTICK.",
+            terminal: true
+        },
+        'COLD_RESTART_FAIL': {
+            text: "> CONTROL RODS RETRACTED.\n> ERROR: 20MS DELAY IN COOLANT SURGE. HEAT OVERRUNS ZIRCONIUM CLADDING.\n> CORE MELTDOWN IMMINENT.\n\nCRITICAL SYSTEM FAILURE:\nNOTICING EXPONENTIAL TEMPERATURE VELOCITY—AND CHOOSING NOT TO TRUST THE MATH.",
+            terminal: true
+        },
         'HOTWIRE': {
             effect: (node, m) => { m.pwr -= 30; m.trueO2 -= 10; },
             text: "> PUSH-BUTTON HOT-WIRE BYPASSES THE ANTI-THEFT ICS.\n> ERROR: TOTAL SYSTEM LOCKDOWN TRIGGERED.\n> SUIT POWER DRAINED COMPENSATING FOR FEEDBACK SURGE (-30% PWR).\n> YOU CANNOT HOTWIRE A SPACECRAFT. YOU MUST BYPASS THE ENCRYPTION MANUALLY.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: CONSOLE_ACCESS (Reboot the flight computer and attempt manual bypass.)",
@@ -674,10 +693,6 @@
         },
         'REWIRE_COMMS': {
             text: "> SOS BROADCASTED IN THE CLEAR.\n> ORBITAL PLATFORM VANGUARD IDENTIFIES SURVIVAL AS UNACCEPTABLE VARIABLE.\n> SECONDARY KINETIC STRIKE INBOUND. IMPACT IMMINENT.\n\nCRITICAL SYSTEM FAILURE:\nIGNORING INCENTIVE STRUCTURES. THEY DID NOT MISS. THEY WERE AIMING AT YOU.",
-            terminal: true
-        },
-        'COLD_RESTART_FAIL': {
-            text: "> CONTROL RODS RETRACTED.\n> ERROR: 20MS DELAY IN COOLANT SURGE. HEAT OVERRUNS ZIRCONIUM CLADDING.\n> CORE MELTDOWN IMMINENT.\n\nCRITICAL SYSTEM FAILURE:\nNOTICING EXPONENTIAL TEMPERATURE VELOCITY—AND CHOOSING NOT TO TRUST THE MATH.",
             terminal: true
         }
     };
@@ -765,8 +780,9 @@
         }, 300); 
     }
 
-    function startHackTimer(seconds) {
+    function startHackTimer(seconds, failNode) {
         hackTime = seconds;
+        currentHackFailNode = failNode;
         timerDiv.style.display = 'block';
         timerDiv.innerText = hackTime.toFixed(1) + "s";
         
@@ -783,7 +799,7 @@
                 clearInterval(hackTimerHandle);
                 timerDiv.style.display = 'none';
                 state = 'ACTIVE';
-                renderNode('TERMINAL_HACK_FAIL');
+                renderNode(currentHackFailNode);
             } else {
                 timerDiv.innerText = hackTime.toFixed(1) + "s";
             }
@@ -912,7 +928,11 @@
                 clearInterval(hackTimerHandle);
                 timerDiv.style.display = 'none';
                 state = 'ACTIVE';
-                renderNode('HANGAR_BAY_ENTRY_SOLO');
+                if (currentNodeId === 'DECRYPT_LATTICE') {
+                    renderNode('HANGAR_BAY_ENTRY_SOLO');
+                } else if (currentNodeId === 'LAUNCH_POD') {
+                    renderNode('POD_ESCAPE_SUCCESS');
+                }
             } else {
                 screen.style.boxShadow = 'inset 0 0 150px rgba(255, 0, 0, 0.8)';
                 setTimeout(() => screen.style.boxShadow = '', 200);
