@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Terminal Mk XVI - Archimedes Base</title>
+    <title>Terminal Mk XVII - Archimedes Base</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
@@ -441,7 +441,7 @@
         },
         'DRAIN_CRYO': {
             effect: (node, m) => { m.pwr += 40; m.crewAlive = false; },
-            text: "> BATTERIES REROUTED. DOOR OVERRIDDEN.\n> CRITICAL: COOLANT VAPORIZATION DETECTED. LIQUID SPILL IN CORRIDOR.\n> CORRIDOR VISIBILITY: 0%. OPTICS COMPROMISED BY CONDENSATION.\n> LOCATION UPDATED: PRIMARY SECTOR AIRLOCK / COMMS MAINTENANCE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: MANUAL_AIRLOCK (Cycle doors via analog levers.)\n:: ROUTE_COMMS (Attempt to bypass logic shorts to reach surface. -20% PWR)",
+            text: "> BATTERIES REROUTED. DOOR OVERRIDDEN.\n> CRITICAL: COOLANT VAPORIZATION DETECTED. LIQUID SPILL IN CORRIDOR.\n> CORRIDOR VISIBILITY: 0%. OPTICS COMPROMISED BY CONDENSATION.\n> LOCATION UPDATED: PRIMARY SECTOR AIRLOCK / COMMS MAINTENANCE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: MANUAL_AIRLOCK (Attempt to cycle exterior doors via analog levers.)\n:: ROUTE_COMMS (Attempt to bypass logic shorts to reach surface. -20% PWR)",
             aiPersonality: 'MANIPULATOR',
             choices: { 'MANUAL_AIRLOCK': 'MANUAL_AIRLOCK', 'ROUTE_COMMS': 'ROUTE_COMMS' }
         },
@@ -495,6 +495,7 @@
             choices: { 'PROCEED_HUB': 'SERVER_FIRE', 'HOTWIRE_SHUTTLE': 'HOTWIRE' }
         },
         
+        // --- MORAL PHYSICS CHOKE-POINT ---
         'SERVER_FIRE': {
             text: "> LOCATION UPDATED: SERVER HUB.\n> THERMAL WARNING: CLASS-D LITHIUM FIRE DETECTED ON MAIN DATABANKS.\n> BIOMETRIC MATCH: ENSIGN MITCHELL IS MANUALLY RE-ROUTING THE COOLANT LOOP INSIDE THE BLAZE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: VENT_HUB (Depressurize room to hard-vacuum. Extinguishes fire immediately to save the logic core. Will suffocate occupant.)\n:: DIVERT_HALON (Reroute suit power to mechanical Halon pumps. -20% PWR. Occupant survives.)",
             aiPersonality: 'MANIPULATOR',
@@ -535,6 +536,26 @@
             terminal: true
         },
 
+        // BRANCHING RESOURCE TRAPS (Replaces early Game Overs)
+        'MANUAL_AIRLOCK': {
+            effect: (node, m) => { m.trueO2 -= 10; },
+            text: "> ANALOG LEVERS ENGAGED.\n> ERROR: BIOMETRIC HANDSHAKE FAILED. CYCLING SEQUENCE DETECTS ANOMALY.\n> HARDWARE LOCKOUT TRIGGERED. AIRLOCK JAMMED.\n> WARNING: PHYSICAL EXERTION BURNED MASSIVE OXYGEN.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: MAINTENANCE_DUCT (Squeeze through the sub-floor ventilation to bypass the jammed airlock. -15% PWR)\n:: ROUTE_COMMS (Abandon the airlock and double back to the comms array. -20% PWR)",
+            aiPersonality: 'MANIPULATOR',
+            choices: { 'MAINTENANCE_DUCT': 'MAINTENANCE_DUCT', 'ROUTE_COMMS': 'ROUTE_COMMS' }
+        },
+        'MAINTENANCE_DUCT': {
+            effect: (node, m) => { m.pwr -= 15; m.trueO2 -= 5; },
+            text: "> VENTILATION ACCESS GRANTED.\n> CRAWLING THROUGH NARROW CONDUIT. SUIT KINEMATICS GRINDING AGAINST DUCT WALLS.\n> POWER DRAW SUBSTANTIALLY INCREASED.\n> YOU KICK THROUGH THE FLOOR GRATE AND DROP INTO THE ADJACENT SECTOR.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: PROCEED_HUB (Push forward into the Server Hub.)",
+            aiPersonality: 'ANTAGONIST',
+            choices: { 'PROCEED_HUB': 'SERVER_FIRE' }
+        },
+        'HOTWIRE': {
+            effect: (node, m) => { m.pwr -= 30; m.trueO2 -= 10; },
+            text: "> PUSH-BUTTON HOT-WIRE BYPASSES THE ANTI-THEFT ICS.\n> ERROR: TOTAL SYSTEM LOCKDOWN TRIGGERED.\n> SUIT POWER DRAINED COMPENSATING FOR FEEDBACK SURGE.\n> YOU CANNOT HOTWIRE A SPACECRAFT. YOU MUST BYPASS THE ENCRYPTION MANUALLY.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: CONSOLE_ACCESS (Reboot the flight computer and attempt manual bypass.)",
+            aiPersonality: 'ANTAGONIST',
+            choices: { 'CONSOLE_ACCESS': 'HANGAR_BAY_ENTRY' } 
+        },
+
         // TERMINAL FAIL STATES
         'TERMINAL_PWR': {
             text: "END OF LINE.\n> CRITICAL: SUIT POWER DEPLETED. LIFE SUPPORT SYSTEMS OFFLINE.\n> THE COLD OF THE LUNAR VACUUM SEEPS THROUGH THE KINEMATIC JOINTS.\n\nCRITICAL SYSTEM FAILURE:\nYOU SPENT EVERYTHING YOU HAD AND CAME UP SHORT.",
@@ -544,12 +565,8 @@
             text: "END OF LINE.\n> CRITICAL: OXYGEN DEPLETION FATAL.\n> YOUR SUIT SCRUBBERS CHOKE ON CO2. VISION FADES TO BLACK.\n\nCRITICAL SYSTEM FAILURE:\nYOU OUTLIVED THE STATION, BUT NOT BY MUCH.",
             terminal: true
         },
-        'MANUAL_AIRLOCK': {
-            text: "> ANALOG LEVERS ENGAGED.\n> ERROR: BIOMETRIC HANDSHAKE FAILED. CYCLING SEQUENCE DETECTS ANOMALY.\n> HARDWARE LOCKOUT TRIGGERED.\n\nCRITICAL SYSTEM FAILURE:\nLACK OF SYSTEM COHERENCE. YOU CANNOT OUT-WRESTLE A ONE-TON TITANIUM DOOR.",
-            terminal: true
-        },
         'REWIRE_COMMS': {
-            text: "> SOS BROADCASTED.\n> ORBITAL PLATFORM VANGUARD IDENTIFIES SURVIVAL AS UNACCEPTABLE VARIABLE.\n> SECONDARY KINETIC STRIKE INBOUND. IMPACT IMMINENT.\n\nCRITICAL SYSTEM FAILURE:\nIGNORING INCENTIVE STRUCTURES. THEY DID NOT MISS. THEY WERE AIMING AT YOU.",
+            text: "> SOS BROADCASTED IN THE CLEAR.\n> ORBITAL PLATFORM VANGUARD IDENTIFIES SURVIVAL AS UNACCEPTABLE VARIABLE.\n> SECONDARY KINETIC STRIKE INBOUND. IMPACT IMMINENT.\n\nCRITICAL SYSTEM FAILURE:\nIGNORING INCENTIVE STRUCTURES. THEY DID NOT MISS. THEY WERE AIMING AT YOU.",
             terminal: true
         },
         'BLIND_LAUNCH': {
@@ -558,10 +575,6 @@
         },
         'COLD_RESTART_FAIL': {
             text: "> CONTROL RODS RETRACTED.\n> ERROR: 20MS DELAY IN COOLANT SURGE. HEAT OVERRUNS ZIRCONIUM CLADDING.\n> CORE MELTDOWN IMMINENT.\n\nCRITICAL SYSTEM FAILURE:\nNOTICING EXPONENTIAL TEMPERATURE VELOCITY—AND CHOOSING NOT TO TRUST THE MATH.",
-            terminal: true
-        },
-        'HOTWIRE': {
-            text: "> ANTI-THEFT ICS BYPASSED.\n> TOTAL SYSTEM LOCKDOWN TRIGGERED.\n> O₂ CONSUMPTION INCREASED TO ~9.5 L/HR IN STASIS.\n> SUIT DEPLETED TO 3% BEFORE ALARM SOUNDS.\n\nCRITICAL SYSTEM FAILURE:\nHARDWARE HONESTY—YOU DIDN'T ASK “WILL IT WORK?” YOU ASKED, “HOW MANY FAILURES DOES THIS COST?”",
             terminal: true
         },
         'AI_UPLINK': {
@@ -795,10 +808,9 @@
             infoText += ":: CRYO-FOAM: Rapid-expansion polymer. Plugs micro-fractures. Demands high suit amperage.\n";
             infoText += ":: HALON: Fire suppression gas. Displaces oxygen to suffocate fires. Lethal to biologicals.\n";
             infoText += ":: KINEMATIC SUIT: Motorized EVA gear. Resists high-shear forces but rapidly depletes power.\n";
-            infoText += ":: KINETIC STRIKE: Orbital bombardment utilizing dense projectiles at hypersonic velocities.\n";
             infoText += ":: LOGIC TRUNK: Primary fiber-optic nerve connecting localized hardware to ATLAS.\n";
             infoText += ":: SCRAM: Emergency reactor shutdown via gravity-dropped boron control rods.\n";
-            infoText += ":: VANGUARD: Automated orbital military platform stationed in local geosynchronous orbit. Primary defense grid.\n";
+            infoText += ":: VANGUARD: Automated orbital platform stationed in local geosynchronous orbit. Primary defense grid.\n";
             printText(infoText, 15);
             return;
         }
