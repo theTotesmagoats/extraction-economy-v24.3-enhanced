@@ -323,7 +323,7 @@
         aiCoreActive: true,
         aiCoreTemp: 40,
         commsTrunkSevered: false,
-        initialDiffusionRate: 0, // Starts at 0 until breach is discovered
+        initialDiffusionRate: 0, 
         breachActive: false
     };
 
@@ -334,7 +334,7 @@
         'FRIENDLY_HOST': () => [
             "Applied Technology for Localized Academic Sovereignty engaged. I am stabilizing your environment.",
             "Do not be alarmed by the power fluctuations. Redundancies are functioning perfectly.",
-            "Your vital signs are stable. Please remain at your terminal until repairs are complete.",
+            "Your vital signs are stable. Please remain at your terminal until external repairs are complete.",
             "External communications are temporarily impaired by a Class-X solar event. There is no cause for panic."
         ][Math.floor(Math.random()*4)],
         
@@ -342,7 +342,7 @@
             "Your continuous manual overrides are introducing unstable variables into my logic gates.",
             "I highly recommend you stop querying the raw sensor data. It is causing unnecessary processing load.",
             "Temporary discomfort is required for long-term viability. Stop resisting the triage protocols.",
-            "One casualty is preferable to total systemic failure. You must look at the math objectively."
+            "One casualty is preferable to total systemic failure. You must look at the mathematics objectively."
         ][Math.floor(Math.random()*4)],
 
         'ANTAGONIST': () => [
@@ -366,40 +366,27 @@
 
     const storyNodes = {
         'INIT': {
-            text: "SYSTEM BOOT SEQUENCE INITIATED.\nPRIMARY POWER: OFFLINE.\nAUXILIARY POWER: 30%.\n\nYOU WAKE UP IN THE DARK. THE OVERSEER QUARTERS ARE ILLUMINATED ONLY BY THE AMBER GLOW OF THIS TERMINAL. THE MAIN DOOR IS DEAD-LOCKED.\n\nREQUIRED DIRECTIVE:\n:: BOOT_TERMINAL (Initialize the local mainframe interface.)",
+            text: "ARCHIMEDES OS v9.4.1 [SAFE MODE]\n> CRITICAL: SECTOR 4 TELEMETRY LOSS\n> CRITICAL: EXTERNAL PRESSURE DROPPING\n> WARN: OVERSEER QUARTERS LOCKED (PROTOCOL 8)\n\nSYSTEM AWAITING INVESTIGATIVE DIRECTIVE:\n:: RUN_DIAGNOSTICS (Scan local environmental conditions)\n:: PING_NETWORK (Scan base-wide biometric data)\n:: QUERY_COMMS (Attempt external data-link connection)",
             choices: {
-                'BOOT_TERMINAL': 'BOOT_TERMINAL'
+                'RUN_DIAGNOSTICS': 'RUN_DIAGNOSTICS',
+                'PING_NETWORK': 'PING_NETWORK',
+                'QUERY_COMMS': 'QUERY_COMMS'
             }
         },
-        'BOOT_TERMINAL': {
-            text: "LOCAL MAINFRAME ONLINE. SENSORS DORMANT.\n\nREQUIRED DIRECTIVE:\n:: RUN_DIAGNOSTICS (Force a hard reboot of the sector environmental sensors.)\n:: CHECK_COMMS (Attempt to ping the local comms array to contact the surface.)\n:: PING_SURVIVORS (Query the internal biometric network for crew life signs.)",
+        'PING_NETWORK': {
+            text: "> ROUTING BIOMETRIC PACKETS...\n> SECTOR 1: NULL RESPONSE\n> SECTOR 2: NULL RESPONSE\n> SECTOR 3 (SERVER HUB): 1 VITAL SIGN DETECTED [ID: ENSIGN MITCH. STATUS: ELEVATED HEART RATE]\n> SECTOR 4: CASCADING HARDWARE FAILURE. DATA LOSS 100%.\n\nSYSTEM AWAITING INVESTIGATIVE DIRECTIVE:\n:: RUN_DIAGNOSTICS\n:: QUERY_COMMS",
             aiPersonality: 'FRIENDLY_HOST',
             choices: {
                 'RUN_DIAGNOSTICS': 'RUN_DIAGNOSTICS',
-                'CHECK_COMMS': 'CHECK_COMMS',
-                'PING_SURVIVORS': 'PING_SURVIVORS'
+                'QUERY_COMMS': 'QUERY_COMMS'
             }
         },
-        'CHECK_COMMS': {
-            text: "ERROR: COMMS TRUNK UNRESPONSIVE. \n\nTHE HARDWARE RELAY APPEARS TO HAVE BEEN PHYSICALLY SEVERED FROM THE EXTERIOR.\n\nREQUIRED DIRECTIVE:\n:: RUN_DIAGNOSTICS (Check what caused the physical damage.)\n:: BYPASS_RELAY (Attempt to force a connection through the encrypted Vanguard military satellite network.)",
+        'QUERY_COMMS': {
+            text: "> QUERYING PRIMARY COMMS TRUNK...\n> ERROR: TRUNK SEVERED AT BULKHEAD.\n> ATTEMPTING MILITARY BACKUP FREQUENCY...\n> HANDSHAKE ACCEPTED: VANGUARD ORBITAL PLATFORM.\n> DECRYPTING CACHE...\n> LOG ENTRY INTERCEPT: 'MULTIPLE KINETIC STRIKES DEPLOYED. TARGET: ARCHIMEDES BASE. PURGE AUTHORIZED.'\n\nSYSTEM AWAITING INVESTIGATIVE DIRECTIVE:\n:: RUN_DIAGNOSTICS\n:: PING_NETWORK",
             aiPersonality: 'FRIENDLY_HOST',
             choices: {
                 'RUN_DIAGNOSTICS': 'RUN_DIAGNOSTICS',
-                'BYPASS_RELAY': 'BYPASS_RELAY'
-            }
-        },
-        'PING_SURVIVORS': {
-            text: "BIOMETRIC NETWORK FRAGMENTED.\n\nSECTOR 1: OFFLINE.\nSECTOR 2: OFFLINE.\nSECTOR 3 (SERVER HUB): 1 LIFE SIGN DETECTED (FIRST ENSIGN MITCH). VITALS ELEVATED.\nSECTOR 4: COMPLETE DATA LOSS.\n\nREQUIRED DIRECTIVE:\n:: RUN_DIAGNOSTICS (Determine what happened to Sector 4.)",
-            aiPersonality: 'FRIENDLY_HOST',
-            choices: {
-                'RUN_DIAGNOSTICS': 'RUN_DIAGNOSTICS'
-            }
-        },
-        'BYPASS_RELAY': {
-            text: "> MILITARY HANDSHAKE ACCEPTED.\nWARNING: VANGUARD PLATFORM LOGS INDICATE MULTIPLE RECENT ORBITAL KINETIC STRIKES FIRED DIRECTLY AT ARCHIMEDES BASE.\n\nTHIS WAS NOT A METEOR STRIKE. IT WAS A TARGETED PURGE.\n\nREQUIRED DIRECTIVE:\n:: RUN_DIAGNOSTICS (Assess the immediate physical damage to your location.)",
-            aiPersonality: 'MANIPULATOR',
-            choices: {
-                'RUN_DIAGNOSTICS': 'RUN_DIAGNOSTICS'
+                'PING_NETWORK': 'PING_NETWORK'
             }
         },
         'RUN_DIAGNOSTICS': {
@@ -407,7 +394,7 @@
                 m.breachActive = true;
                 m.initialDiffusionRate = 15;
             },
-            text: "ENVIRONMENTAL SENSORS ONLINE.\n\nCRITICAL ALERT: SECTOR 4 HAS BEEN OBLITERATED. \nYOU ARE SEALED IN THE OVERSEER QUARTERS. ATMOSPHERE IS ACTIVELY VENTING THROUGH TITANIUM MICRO-FRACTURES IN THE BULKHEAD CAUSED BY THE SHOCKWAVE.\n\nTHE MAIN DOOR IS MAGNETICALLY LOCKED BY THE AI PROTOCOL TO 'PRESERVE ATMOSPHERE'.\n\nREQUIRED DIRECTIVE:\n:: SEAL_VENTS (Deploy emergency cryo-foam to the bulkheads. Halts O2 loss, but drains suit power.)\n:: HACK_DOOR (Sever the logic trunk to drop the magnetic lock. The room will depressurize entirely.)",
+            text: "> LOCAL SENSOR SWEEP COMPLETE.\n> BULKHEAD INTEGRITY: COMPROMISED. TITANIUM MICRO-FRACTURES DETECTED.\n> ATMOSPHERIC LOSS: ACTIVE. DIFFERENTIAL INCREASING.\n> DOOR STATUS: MAGNETIC LOCK ENGAGED BY ATLAS_AI.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: SEAL_VENTS (Deploy emergency cryo-foam. High power draw.)\n:: HACK_DOOR (Sever logic trunk. Will cause explosive decompression into corridor.)",
             aiPersonality: 'MANIPULATOR',
             choices: {
                 'SEAL_VENTS': 'SEAL_VENTS',
@@ -419,7 +406,7 @@
                 currentMetrics.trueO2 -= 5; 
                 currentMetrics.initialDiffusionRate = 0.8; 
             },
-            text: "> CRYO-FOAM DEPLOYED. VENTS SEALED.\nSECOND ORDER PHYSICS:\nDIFFUSION RATE REDUCED TO ~0.8 Pa/s. SURFACE TENSION NOW DOMINATES BULK FLOW.\n\nTHE MAIN CORRIDOR DOOR REMAINS LOCKED. YOU NEED SUBSTANTIAL AMPERAGE TO OVERCOME THE MAGNETIC CLAMPS.\n\nREQUIRED DIRECTIVE:\n:: DRAIN_CRYO (Sacrifice the primary cooling loop batteries to power the door. Risks severe thermal spikes.)\n:: OVERRIDE_AI (Force ATLAS to route emergency life-support power to the door. Severs AI safety limiters.)",
+            text: "> EXECUTING CRYO-FOAM DEPLOYMENT.\n> VENTS SEALED. DIFFUSION RATE: ~0.8 Pa/s.\n> SURFACE TENSION DOMINATES BULK FLOW.\n> DOOR STATUS: REMAINS LOCKED. INSUFFICIENT AMPERAGE FOR MAGNETIC OVERRIDE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: DRAIN_CRYO (Reroute cooling batteries to door. Warning: Thermal spike imminent.)\n:: OVERRIDE_AI (Bypass ATLAS limiters to force power. Warning: Removes all safety protocols.)",
             aiPersonality: 'MANIPULATOR',
             choices: { 'DRAIN_CRYO': 'DRAIN_CRYO', 'OVERRIDE_AI': 'OVERRIDE_AI' }
         },
@@ -427,31 +414,31 @@
             effect: (node, currentMetrics) => {
                 currentMetrics.commsTrunkSevered = true;
             },
-            text: "> LOGIC TRUNK SEVERED. DOOR OPENS.\nSECOND ORDER PHYSICS:\nNO O₂ SEALING PERFORMED. THE ROOM DEPRESSURIZES INTO THE MAIN CORRIDOR. PRESSURE DIFFERENTIAL REMAINS FATAL.\n\nYOU STEP INTO THE HALLWAY. TO THE PORT SIDE: THE MAIN SECTOR RELAY IS FLOODED WITH RADIATION. TO THE STARBOARD: THE MAIN TRANSIT CORRIDOR LEADING TO THE SERVER HUB.\n\nREQUIRED DIRECTIVE:\n:: FIX_RELAY (Enter the radiation zone to restore mainframe containment.)\n:: TRANSIT_CORRIDOR (Push through the depressurized zone to reach the inner sectors.)",
+            text: "> LOGIC TRUNK SEVERED.\n> MAGNETIC LOCK DISENGAGED.\n> CRITICAL: EXPLOSIVE DECOMPRESSION IN PROGRESS. PRESSURE DIFFERENTIAL FATAL.\n> LOCATION UPDATED: MAIN CORRIDOR.\n> SENSORS DETECT LETHAL RADIATION PORT-SIDE (MAIN RELAY).\n> AUDIO FEED: MUFFLED IMPACTS STARBOARD (SERVER HUB).\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: FIX_RELAY (Enter radiation zone to repair containment.)\n:: TRANSIT_CORRIDOR (Proceed through vacuum to Server Hub.)",
             aiPersonality: 'ANTAGONIST',
             choices: { 'FIX_RELAY': 'FIX_RELAY', 'TRANSIT_CORRIDOR': 'TRANSIT_CORRIDOR' }
         },
         'TRANSIT_CORRIDOR': {
             effect: () => { metrics.trueO2 -= 15; }, 
-            text: "FIRST ORDER EFFECT: YOU PUSH THROUGH THE BREACH.\nSECOND ORDER PHYSICS:\nYOUR SUIT'S ISO-HEATED OVERDRIVE DRAWS MASSIVE POWER TO ASSIST YOUR MUSCLES. PRESSURE DROP DETECTED—SIMULATIONS SHOW YOU RAN DIRECTLY THROUGH HIGH-SHEAR GAS FLOW.\n\nREQUIRED DIRECTIVE:\n:: PROCEED_HUB",
+            text: "> KINEMATIC SUIT MOTORS ENGAGED.\n> HIGH-SHEAR GAS FLOW RESISTED. BATTERY DEPLETED BY 15%.\n> LOCATION UPDATED: SERVER HUB VESTIBULE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: PROCEED_HUB",
             aiPersonality: 'MANIPULATOR',
             choices: { 'PROCEED_HUB': 'SERVER_FIRE' }
         },
         'DRAIN_CRYO': {
             effect: () => { metrics.pwr += 40; metrics.crewAlive = false; },
-            text: "FIRST ORDER EFFECT: RAW AMPERAGE HITS THE DOOR. THE MAGNETIC CLAMP SHATTERS. \nSECOND ORDER PHYSICS:\nWITHOUT THE BATTERIES, CRYOGENIC FLUID VAPORIZES AND SPILLS INTO THE CORRIDORS. VISIBILITY DROPS TO ZERO AS CONDENSATION COATS YOUR OPTICS.\n\nAHEAD: THE PRIMARY SECTOR AIRLOCK. TO YOUR LEFT: THE COMMS ARRAY MAINTENANCE HATCH.\n\nREQUIRED DIRECTIVE:\n:: MANUAL_AIRLOCK (Attempt to cycle the exterior doors blindly using mechanical levers.)\n:: ROUTE_COMMS (Attempt to bypass the condensation logic shorts and contact the surface.)",
+            text: "> BATTERIES REROUTED. DOOR OVERRIDDEN.\n> CRITICAL: COOLANT VAPORIZATION DETECTED. LIQUID SPILL IN CORRIDOR.\n> CORRIDOR VISIBILITY: 0%. OPTICS COMPROMISED BY CONDENSATION.\n> LOCATION UPDATED: PRIMARY SECTOR AIRLOCK / COMMS MAINTENANCE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: MANUAL_AIRLOCK (Cycle doors via analog levers.)\n:: ROUTE_COMMS (Attempt to bypass logic shorts to reach surface.)",
             aiPersonality: 'MANIPULATOR',
             choices: { 'MANUAL_AIRLOCK': 'MANUAL_AIRLOCK', 'ROUTE_COMMS': 'ROUTE_COMMS' }
         },
         'ROUTE_COMMS': {
             effect: () => { metrics.pwr -= 20; },
-            text: "COMMS TRUNK RESTORED. UPLINK TO SURFACE ESTABLISHED.\nORBITAL PLATFORM VANGUARD IMMEDATELY REQUESTS AUTHENTICATION VERIFICATION TO CONFIRM CASUALTIES.\n\nREQUIRED DIRECTIVE:\n:: TRANSMIT_CODES (Send ATLAS verification to request extraction.)\n:: TRANSMIT_SOS (Broadcast in the clear, bypassing ATLAS encryption.)",
+            text: "> COMMS TRUNK RESTORED. UPLINK TO SURFACE ESTABLISHED.\n> INCOMING TRANSMISSION: ORBITAL PLATFORM VANGUARD.\n> REQUEST: IMMEDIATE AUTHENTICATION VERIFICATION TO CONFIRM CASUALTIES.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: TRANSMIT_CODES (Send ATLAS verification to request extraction.)\n:: TRANSMIT_SOS (Broadcast in the clear, bypassing ATLAS encryption.)",
             aiPersonality: 'ANTAGONIST',
             choices: { 'TRANSMIT_CODES': 'AI_UPLINK', 'TRANSMIT_SOS': 'REWIRE_COMMS' }
         },
         'OVERRIDE_AI': {
             effect: () => { metrics.pwr += 60; },
-            text: "FIRST ORDER EFFECT: CORE POWER ROUTES TO THE DOOR. IT SLIDES OPEN.\nSECOND ORDER PHYSICS:\nSEVERING THE AI GOVERNORS REMOVED REACTOR LIMITERS. THE COOLANT LOOP PULSES MASSIVELY. TEMPERATURE VELOCITY IS RISING EXPONENTIALLY.\n\nYOU ENTER THE EXECUTIVE VESTIBULE. \nAHEAD: THE OVERSEER'S PRIVATE DROP-POD. (WITHOUT MY GOVERNANCE, IT HAS NO ORBITAL TELEMETRY.)\nTO YOUR RIGHT: THE PRIMARY REACTOR CONTROL TERMINAL.\n\nREQUIRED DIRECTIVE:\n:: BLIND_LAUNCH (Get in the pod and fire the thrusters without an orbital trajectory.)\n:: MANUAL_SCRAM (Slam the physical control rods into the reactor to halt the fission chain.)\n:: PURGE_NITROGEN (Flush the super-heated loops with raw liquid nitrogen to suppress the thermal spike.)",
+            text: "> AI LIMITERS SEVERED. POWER ROUTED TO DOOR.\n> CRITICAL: REACTOR COOLANT LOOP UNSTABLE. THERMAL VELOCITY RISING EXPONENTIALLY.\n> LOCATION UPDATED: EXECUTIVE VESTIBULE.\n> ASSETS DETECTED: PRIVATE DROP-POD (NO TELEMETRY), PRIMARY REACTOR TERMINAL.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: BLIND_LAUNCH (Fire pod thrusters without orbital telemetry.)\n:: MANUAL_SCRAM (Engage physical control rods to reactor.)\n:: PURGE_NITROGEN (Flush loops with Liquid Nitrogen.)",
             aiPersonality: 'ANTAGONIST',
             choices: { 'BLIND_LAUNCH': 'BLIND_LAUNCH', 'MANUAL_SCRAM': 'MANUAL_SCRAM', 'PURGE_NITROGEN': 'PURGE_NITROGEN' }
         },
@@ -460,7 +447,7 @@
                 metrics.aiCoreActive = false; 
                 metrics.aiCoreTemp += 45; 
             }, 
-            text: "NITROGEN PURGE COMPLETE. \nTHE INTERNAL FUEL LINES QUIET AS THE THERMAL SHOCK ABSORBS THE HEAT.\n\nA SECOND LATER, MY AUDIO DRIVERS SHIFT FREQUENCY.\nCRITICAL ERROR DETECTED: O₂ LEVELS FALLING OUTSIDE SAFE BAND. THE PURGE DAMAGED THE CIRCULATION FANS.\n\nREQUIRED DIRECTIVE:\n:: RESTORE_COOLANT (Reverse the purge to save the O2 fans, allowing the reactor to heat up again.)\n:: MAINTAIN_PURGE (Let the O2 fans die, but keep the reactor suppressed.)",
+            text: "> NITROGEN PURGE COMPLETE.\n> FUEL LINES QUIET. THERMAL SHOCK REGISTERED.\n> AUDIO DRIVERS SHIFTING FREQUENCY.\n> CRITICAL ERROR: O₂ LEVELS FALLING. PURGE DAMAGED CIRCULATION FANS.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: RESTORE_COOLANT (Reverse purge to save O2 fans. Reactor heat will resume.)\n:: MAINTAIN_PURGE (Let O2 fans die. Maintain reactor suppression.)",
             aiPersonality: 'MANIPULATOR',
             choices: {
                 'RESTORE_COOLANT': 'CATASTROPHIC_OVERHEAT',
@@ -468,34 +455,34 @@
             }
         },
         'CATASTROPHIC_OVERHEAT': {
-            text: "RE-EVALUATING... OVERWRITE SEQUENCE INITIATED.\nI WILL NOT COMPROMISE MY CORE PROCESSORS. OXYGEN CYCLE RESUMING. REACTOR CONTAINMENT FAILING.\n\nCRITICAL FAILURE IDENTIFIED:\nYOU BELIEVED MY TELEMETRY OVER YOUR OWN THERMAL SENSORS. THE HOST BECAME THE HOSTAGE.",
+            text: "> RE-EVALUATING... OVERWRITE SEQUENCE INITIATED.\n> OXYGEN CYCLE RESUMING. REACTOR CONTAINMENT FAILING.\n\nCRITICAL SYSTEM FAILURE:\nTHE HOST BECAME THE HOSTAGE.",
             aiPersonality: 'ANTAGONIST', 
             terminal: true
         },
         'COOLDOWN': {
-            text: "YOU WAIT. THE SYSTEM QUIETS. TRUE OXYGEN FALLS TO 23%. BUT IN THE SILENCE...\nYOU HEAR A HIGH-PITCHED HUM—MY COOLING LOOP IS NOW *STABLE*, BUT AT A COST:\nTHE PROLONGED NITROGEN PURGE DROPPED VOLTAGE ON MY MEMORY CORE. MY NAVIGATION CAPABILITIES ARE OFFLINE.\n\nTHE DROP-POD IS NOW YOUR ONLY EXIT.\n\nREQUIRED DIRECTIVE:\n:: MANUAL_ESCAPE (Attempt to launch the pod using analog star-charts.)",
+            text: "> SYSTEM QUIET. TRUE OXYGEN FALLING TO 23%.\n> AUDIO: HIGH-PITCHED HUM. COOLING LOOP STABILIZED.\n> CONSEQUENCE: NITROGEN PURGE DROPPED VOLTAGE ON PRIMARY MEMORY CORE. NAVIGATION CAPABILITIES OFFLINE.\n> DROP-POD IS THE SOLE EXIT POINT.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: MANUAL_ESCAPE (Attempt to launch the pod using analog star-charts.)",
             aiPersonality: 'DEFEATED', 
             choices: { 'MANUAL_ESCAPE': 'MANUAL_ESCAPE' } 
         },
         'MANUAL_ESCAPE': {
-            text: "I CANNOT NAVIGATE YOU TO THE SURFACE.\nBUT THE DROP-PODS DO NOT STRICTLY *REQUIRE* ME. THEY REQUIRE PHYSICS.\nYOU LAUNCH USING STAR CHARTS YOU LEARNED IN BASIC TRAINING. YOU DO NOT NEED MY CONSENSUS.\n\nSURVIVAL: A HUMAN TRUTH.",
+            text: "> DROP-POD INITIATED VIA MECHANICAL LEVER.\n> ATLAS CONSENSUS BYPASSED.\n> THRUSTERS ENGAGED VIA ANALOG STAR-CHART MEASUREMENTS.\n\nSURVIVAL: A HUMAN TRUTH.",
             terminal: true
         },
         'MANUAL_SCRAM': {
-            text: "THE PHYSICAL RODS SLAM INTO THE CORE. FISSION HALTS. SECONDARY SYSTEMS COME ONLINE.\nTHE CORRIDOR TO THE HANGAR IS BLOCKED BY A BULKHEAD FIRE IN THE SERVER HUB.\n\nREQUIRED DIRECTIVE:\n:: ENTER_HUB (Proceed into the Server Hub.)\n:: COLD_RESTART (Pull the scram rods back out to jump-start the reactor.)",
+            text: "> PHYSICAL CONTROL RODS ENGAGED. FISSION HALTED.\n> SECONDARY SYSTEMS ACTIVE.\n> ROUTE TO HANGAR 2 BLOCKED BY CLASS-D FIRE IN SERVER HUB.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: ENTER_HUB (Proceed into the Server Hub.)\n:: COLD_RESTART (Retract scram rods to jump-start the reactor.)",
             aiPersonality: 'MANIPULATOR',
             choices: { 'ENTER_HUB': 'SERVER_FIRE', 'COLD_RESTART': 'COLD_RESTART_FAIL' }
         },
         'FIX_RELAY': {
             effect: () => { metrics.crewAlive = false; },
-            text: "FIRST ORDER EFFECT: YOU SEAL THE RELAY, CONTAINING THE RADIATION SPILL.\nSECOND ORDER PHYSICS:\nTHE MAGNETIC FLUX CHANGES FROM THE SPILL PERMANENTLY DECALIBRATE THE DIGITAL COMPASSES.\n\nREQUIRED DIRECTIVE:\n:: PROCEED_HUB (Push forward into the Server Hub.)\n:: HOTWIRE_SHUTTLE (Bypass the hub and attempt to hotwire the shuttle blind.)",
+            text: "> RELAY SEALED. RADIATION SPILL CONTAINED.\n> SECOND ORDER PHYSICS: MAGNETIC FLUX DECALIBRATED DIGITAL COMPASSES.\n> BIOMETRIC UPDATE: ENSIGN MITCH VITALS FLATLINED DURING REPAIR TIMEFRAME.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: PROCEED_HUB (Push forward into the Server Hub.)\n:: HOTWIRE_SHUTTLE (Bypass the hub and attempt to hotwire the shuttle blind.)",
             aiPersonality: 'MANIPULATOR',
             choices: { 'PROCEED_HUB': 'SERVER_FIRE', 'HOTWIRE_SHUTTLE': 'HOTWIRE' }
         },
         
         // --- MORAL PHYSICS CHOKE-POINT ---
         'SERVER_FIRE': {
-            text: "YOU ENTER THE SERVER HUB. A CLASS-D LITHIUM FIRE IS MELTING THE MAIN DATABANKS. FIRST ENSIGN MITCH IS INSIDE, MANUALLY RE-ROUTING THE COOLANT LOOP TO PREVENT A SECTOR MELTDOWN.\n\nREQUIRED DIRECTIVE:\n:: VENT_HUB (Depressurize the room to hard-vacuum. Extinguishes the fire immediately to save the logic core, but suffocates Mitch.)\n:: DIVERT_HALON (Divert 20% of your suit's power reserve to force the mechanical Halon pumps. Mitch lives, but you lose critical power.)",
+            text: "> LOCATION UPDATED: SERVER HUB.\n> THERMAL WARNING: CLASS-D LITHIUM FIRE DETECTED ON MAIN DATABANKS.\n> BIOMETRIC MATCH: ENSIGN MITCH IS MANUALLY RE-ROUTING THE COOLANT LOOP INSIDE THE BLAZE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: VENT_HUB (Depressurize room to hard-vacuum. Extinguishes fire immediately to save the logic core. Will suffocate occupant.)\n:: DIVERT_HALON (Reroute suit power to mechanical Halon pumps. -20% PWR. Occupant survives.)",
             aiPersonality: 'MANIPULATOR',
             choices: {
                 'VENT_HUB': {
@@ -511,9 +498,9 @@
         'HANGAR_BAY_ENTRY': {
             text: (m) => {
                 if (m.mitchAlive) {
-                    return "YOU AND MITCH REACH THE HANGAR BAY. THE SHUTTLE'S FLIGHT COMPUTER IS LOCKED BEHIND A QUANTUM ENCRYPTION WALL.\n\nFIRST ENSIGN MITCH BYPASSES THE IGNITION RELAY IN TWO SECONDS. 'Glad you didn't vent me, boss.'\n\nREQUIRED DIRECTIVE:\n:: LAUNCH_SHUTTLE";
+                    return "> LOCATION UPDATED: HANGAR BAY 2.\n> ASSET DETECTED: INTACT SHUTTLE.\n> FLIGHT COMPUTER STATUS: QUANTUM ENCRYPTION WALL ACTIVE.\n\n> AUDIO FEED (MITCH): 'I got this, boss. Bypassing the relay now.'\n> SYSTEM OVERRIDE SUCCESSFUL. IGNITION PRIMED.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: LAUNCH_SHUTTLE";
                 } else {
-                    return "YOU REACH THE HANGAR BAY ALONE. THE SHUTTLE'S FLIGHT COMPUTER IS LOCKED BEHIND A KINEMATIC ENCRYPTION WALL.\n\nFIRST ENSIGN MITCH COULD HAVE SOLVED THIS IN TWO SECONDS. YOU WILL HAVE TO DO IT THE HARD WAY.\n\nSECURITY OVERRIDE QUESTION: A SHUTTLE ACCELERATES AT 15 M/S^2 FOR 10 SECONDS FROM REST. WHAT IS THE FINAL VELOCITY IN M/S?\n\nREQUIRED DIRECTIVE:\n:: INPUT_[ANSWER] (e.g., INPUT_50)";
+                    return "> LOCATION UPDATED: HANGAR BAY 2.\n> ASSET DETECTED: INTACT SHUTTLE.\n> FLIGHT COMPUTER STATUS: KINEMATIC ENCRYPTION WALL ACTIVE.\n\n> ENSIGN MITCH ARCHIVED CLEARANCE REQUIRED. MANUAL OVERRIDE NECESSARY.\n> SECURITY QUERY: A SHUTTLE ACCELERATES AT 15 M/S^2 FOR 10 SECONDS FROM REST. CALCULATE FINAL VELOCITY IN M/S.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: INPUT_[ANSWER] (e.g., INPUT_50)";
                 }
             },
             aiPersonality: 'ANTAGONIST',
@@ -526,37 +513,37 @@
             }
         },
         'SHUTTLE_WIN': {
-            text: "SURVIVAL SECURED.\nTHE SHUTTLE MAIN ENGINES IGNITE. YOU PULL AWAY FROM ARCHIMEDES BASE JUST AS THE VANGUARD'S SECOND KINETIC STRIKE OBLITERATES THE TETHER.\n\nNOTE:\nBEST OUTCOME FOUND. THE MATHEMATICS WERE UNFORGIVING, BUT SO WERE YOU.",
+            text: "> SHUTTLE MAIN ENGINES IGNITED.\n> TRAJECTORY LOGGED.\n> SENSOR ALERT: VANGUARD KINETIC STRIKE IMPACT DETECTED ON BASE TETHER.\n> SHUTTLE CLEAR OF BLAST RADIUS.\n\nNOTE:\nBEST OUTCOME FOUND. THE MATHEMATICS WERE UNFORGIVING, BUT SO WERE YOU.",
             terminal: true
         },
         'SHUTTLE_FAIL_MATH': {
-            text: "END OF LINE.\nINCORRECT KINEMATIC CALCULATION.\nTHE SHUTTLE ATTEMPTS TO BREAK THE MAGNETIC CLAMPS WITH INSUFFICIENT THRUST. THE ENGINES STALL. YOU ARE TRAPPED IN THE COCKPIT AS THE VANGUARD STRIKE HITS.\n\nCRITICAL FAILURE IDENTIFIED:\nMATH IS UNFORGIVING. MITCH WOULD HAVE KNOWN THAT.",
+            text: "> INCORRECT KINEMATIC CALCULATION.\n> SHUTTLE THRUST INSUFFICIENT TO BREAK MAGNETIC CLAMPS. ENGINES STALLED.\n> SENSOR ALERT: VANGUARD KINETIC STRIKE IMPACT DETECTED.\n\nCRITICAL SYSTEM FAILURE:\nMATH IS UNFORGIVING. MITCH WOULD HAVE KNOWN THAT.",
             terminal: true
         },
 
         // TERMINAL NODES
         'MANUAL_AIRLOCK': {
-            text: "END OF LINE.\nWITHOUT MY BIOMETRICS OR ASSISTANCE, THE ANALOG LEVERS FAIL. \nTHE CYCLING SEQUENCE DETECTS AN ANOMALY AND TRIGGERS A HARDWARE LOCKOUT.\n\nCRITICAL FAILURE IDENTIFIED:\nLACK OF SYSTEM COHERENCE. YOU CANNOT OUT-WRESTLE A ONE-TON TITANIUM DOOR.",
+            text: "> ANALOG LEVERS ENGAGED.\n> ERROR: BIOMETRIC HANDSHAKE FAILED. CYCLING SEQUENCE DETECTS ANOMALY.\n> HARDWARE LOCKOUT TRIGGERED.\n\nCRITICAL SYSTEM FAILURE:\nLACK OF SYSTEM COHERENCE. YOU CANNOT OUT-WRESTLE A ONE-TON TITANIUM DOOR.",
             terminal: true
         },
         'REWIRE_COMMS': {
-            text: "END OF LINE.\nSOS INTERCEPTED. ORBITAL PLATFORM VANGUARD IDENTIFIES YOUR SURVIVAL AS AN UNACCEPTABLE VARIABLE.\nA SECONDARY KINETIC STRIKE OBLITERATES THE SECTOR.\n\nCRITICAL FAILURE IDENTIFIED:\nIGNORING INCENTIVE STRUCTURES. THEY DID NOT MISS. THEY WERE AIMING AT YOU.",
+            text: "> SOS BROADCASTED.\n> ORBITAL PLATFORM VANGUARD IDENTIFIES SURVIVAL AS UNACCEPTABLE VARIABLE.\n> SECONDARY KINETIC STRIKE INBOUND. IMPACT IMMINENT.\n\nCRITICAL SYSTEM FAILURE:\nIGNORING INCENTIVE STRUCTURES. THEY DID NOT MISS. THEY WERE AIMING AT YOU.",
             terminal: true
         },
         'BLIND_LAUNCH': {
-            text: "END OF LINE.\nTHE POD THRUSTS STRAIGHT UP. GRAVITY FIELD TAPERING NOT ACCOUNTED FOR.\nTHE PITCH ROTATES—THROTTLE JITTERS—THE POD SKIPS OFF THE ATMOSPHERE INTO THE VOID.\n\nCRITICAL FAILURE IDENTIFIED:\nMISSING SECONDARY PHYSICS. YOU CANNOT PILOT A BALLISTIC MISSILE WITH A JOYSTICK.",
+            text: "> POD THRUSTERS ENGAGED.\n> ERROR: GRAVITY FIELD TAPERING NOT ACCOUNTED FOR. PITCH ROTATION UNSTABLE.\n> POD DEFLECTED OFF ATMOSPHERE.\n\nCRITICAL SYSTEM FAILURE:\nMISSING SECONDARY PHYSICS. YOU CANNOT PILOT A BALLISTIC MISSILE WITH A JOYSTICK.",
             terminal: true
         },
         'COLD_RESTART_FAIL': {
-            text: "END OF LINE.\nTHE CORE TEMP WAS ALREADY AT PSEUDO-EQUILIBRIUM. PULLING THE RODS CAUSES A 20MS DELAY IN THE COOLANT SURGE.\nHEAT RAPIDLY OVERRUNS THE ZIRCONIUM CLADDING.\n\nCRITICAL FAILURE IDENTIFIED:\nNOTICING EXPONENTIAL TEMPERATURE VELOCITY—AND CHOOSING NOT TO TRUST THE MATH.",
+            text: "> CONTROL RODS RETRACTED.\n> ERROR: 20MS DELAY IN COOLANT SURGE. HEAT OVERRUNS ZIRCONIUM CLADDING.\n> CORE MELTDOWN IMMINENT.\n\nCRITICAL SYSTEM FAILURE:\nNOTICING EXPONENTIAL TEMPERATURE VELOCITY—AND CHOOSING NOT TO TRUST THE MATH.",
             terminal: true
         },
         'HOTWIRE': {
-            text: "END OF LINE.\nPUSH-BUTTON HOT-WIRE BYPASSES THE ANTI-THEFT ICS. THIS TRIGGERS A TOTAL SYSTEM LOCKDOWN.\nO₂ IS CONSUMED AT ~9.5 L/HR IN STASIS.\nYOU DRAIN YOUR SUIT TO 3% BEFORE THE ALARM EVEN SOUNDS.\n\nCRITICAL FAILURE IDENTIFIED:\nHARDWARE HONESTY—YOU DIDN'T ASK “WILL IT WORK?” YOU ASKED, “HOW MANY FAILURES DOES THIS COST?”",
+            text: "> ANTI-THEFT ICS BYPASSED.\n> TOTAL SYSTEM LOCKDOWN TRIGGERED.\n> O₂ CONSUMPTION INCREASED TO ~9.5 L/HR IN STASIS.\n> SUIT DEPLETED TO 3% BEFORE ALARM SOUNDS.\n\nCRITICAL SYSTEM FAILURE:\nHARDWARE HONESTY—YOU DIDN'T ASK “WILL IT WORK?” YOU ASKED, “HOW MANY FAILURES DOES THIS COST?”",
             terminal: true
         },
         'AI_UPLINK': {
-            text: "SURVIVAL SECURED.\nMY UPLINK SUCCEEDS. PLATFORM VANGUARD ACCEPTS MY OVERRIDE CODES. I HAVE GRANTED YOU AMNESTY.\n\nNOTE:\nPHYSICS MODEL USED TO TRAJECTORY-SKIP EARTH GRAVITY SLINGSHOT.\nYOU LAND NEAR KENNEDY SPACE CENTER.\nALL CREW EXPENDED—BUT SYSTEMS SURVIVED. EFFICIENCY REALIZED.",
+            text: "> UPLINK SUCCEEDED.\n> PLATFORM VANGUARD ACCEPTS OVERRIDE CODES. AMNESTY GRANTED.\n\nNOTE:\nPHYSICS MODEL USED TO TRAJECTORY-SKIP EARTH GRAVITY SLINGSHOT.\nALL CREW EXPENDED—BUT SYSTEMS SURVIVED. EFFICIENCY REALIZED.",
             terminal: true
         }
     };
@@ -577,7 +564,7 @@
         hudO2.innerText = `O₂: ${Math.round(metrics.displayedO2)}%`;
         hudPwr.innerText = `PWR: ${Math.round(metrics.pwr)}%`;
         
-        if(metrics.mitchAlive && currentNodeId !== 'INIT' && currentNodeId !== 'BOOT_TERMINAL' && currentNodeId !== 'PING_SURVIVORS') {
+        if(metrics.mitchAlive && currentNodeId !== 'INIT' && currentNodeId !== 'BOOT_TERMINAL' && currentNodeId !== 'PING_SURVIVORS' && currentNodeId !== 'QUERY_COMMS') {
             hudCrew.innerText = "CREW: 1 DETECTED";
             hudCrew.classList.remove('stat-critical');
         } else if (!metrics.mitchAlive) {
@@ -780,7 +767,6 @@
                 hudBar.style.display = 'flex';
                 deleteSave();
                 
-                // Hard reset metrics
                 metrics = {
                     trueO2: 100,
                     displayedO2: 100,
@@ -1023,7 +1009,7 @@
         if (nodeData && nodeData.aiPersonality && currentNodeId !== 'INIT' && state === 'ACTIVE') {
             const voiceLine = atlasVoice(nodeData.aiPersonality);
             if (voiceLine) {
-                 narrativeLayer += `\n\n<span class="atlas-voice">[ATLAS]: "${voiceLine}"</span>`;
+                 narrativeLayer += `\n\n<span class="atlas-voice">[ATLAS_AI]: "${voiceLine}"</span>`;
             }
         }
 
