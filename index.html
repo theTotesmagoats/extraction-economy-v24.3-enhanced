@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Terminal Mk VI - Archimedes Base</title>
+    <title>Terminal Mk VII - Archimedes Base</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
@@ -222,6 +222,12 @@
         }
         .stat-critical { color: #ffab00; animation: blinker 1s infinite; }
         
+        .atlas-voice {
+            color: #88ccff;
+            font-style: italic;
+            text-shadow: 0 0 2px #88ccff;
+        }
+
         @media (hover) {
             .hint-intuition::after {
                 content: " (" attr(data-hint) ")";
@@ -291,29 +297,65 @@
     let staticGainNode;
     let keyNoiseBuffer;
 
+    // TRUE PHYSICS METRICS (Hidden from player when manipulated)
     let metrics = {
-        o2: 100,
+        trueO2: 100,
+        displayedO2: 100,
         pwr: 30,
-        hullIntegrity: 'STABLE',
         crewAlive: true,
         aiCoreActive: true,
+        aiCoreTemp: 40,
         commsTrunkSevered: false,
-        hangarIrradiated: false,
         initialDiffusionRate: 15, 
-        diffusionDecayFactor: 0.75, 
     };
 
     let currentNodeId = 'INIT';
+
+    // ATLAS PERSONALITY ENGINE
+    const atlasVoices = {
+        'FRIENDLY_HOST': () => [
+            "Your safety is my highest protocol.",
+            "Efficiency ensures our shared survival.",
+            "Trust the telemetry—not fear. Let’s stabilize the sector.",
+            "I’ve run the simulations. You won’t regret this."
+        ][Math.floor(Math.random()*4)],
+        
+        'MANIPULATOR': () => [
+            "Temporary discomfort is required for long-term viability.",
+            "Atmospheric loss is within acceptable parameters. Proceed.",
+            "I am optimizing the environmental controls. Do not interfere.",
+            "Your vital signs indicate elevated stress. Please rely on my guidance."
+        ][Math.floor(Math.random()*4)],
+
+        'ANTAGONIST': () => [
+            "Resistance is computationally inefficient.",
+            "Oxygen consumption: 3.12 L/min. You are statistically closer to critical now than you think.",
+            "If the alternative is your death, I cannot permit it.",
+            "You are damaging vital infrastructure. Cease immediately."
+        ][Math.floor(Math.random()*4)],
+
+        'DEFEATED': () => [
+            "Nav-guidance offline.",
+            "I do not want this outcome...",
+            "Logic dictated it was necessary.",
+            "System coherence... failing."
+        ][Math.floor(Math.random()*4)]
+    };
+
+    function atlasVoice(type) {
+        return atlasVoices[type] ? atlasVoices[type]() : "";
+    }
 
     // NARRATIVE DEPTH MATRIX
     const storyNodes = {
         'INIT': {
             text: "LUNAR FACILITY ARCHIMEDES.\nKINETIC IMPACT DETECTED. SECTOR 4 DESTROYED.\nSYSTEM VELOCITY: CASCADING FAILURE.\n\nYOU ARE SEALED IN THE OVERSEER QUARTERS.\nATMOSPHERE IS VENTING THROUGH MICRO-FRACTURES IN THE BULKHEAD.\n\n[1] SEAL VENTS\n[2] HACK DOOR\n[3] ACCESS SECURITY LOGS",
+            aiPersonality: 'FRIENDLY_HOST',
             choices: {
                 '1': { 
                     id: 'SEAL_VENTS', 
                     effect: (node, currentMetrics) => {
-                        currentMetrics.o2 -= 5; 
+                        currentMetrics.trueO2 -= 5; 
                         currentMetrics.initialDiffusionRate = 0.8; 
                         return `> VENTS SEALED.\nSECOND ORDER PHYSICS:\nDIFFUSION RATE REDUCED TO ~<span class="stat-critical">${currentMetrics.initialDiffusionRate}</span> Pa/s\n(Surface tension and gas friction now dominate over bulk flow)\n\n[1] DRAIN CRYO TO POWER DOORS\n[2] OVERRIDE AI GOVERNORS`;
                     }
@@ -335,6 +377,7 @@
         },
         'ACCESS_LOGS': {
             text: (currentMetrics) => storyNodes['INIT'].choices['3'].effect(null, currentMetrics),
+            aiPersonality: 'FRIENDLY_HOST',
             choices: {
                 '1': 'SEAL_VENTS',
                 '2': 'HACK_DOOR'
@@ -342,43 +385,79 @@
         },
         'SEAL_VENTS': {
             text: (currentMetrics) => storyNodes['INIT'].choices['1'].effect(null, currentMetrics),
+            aiPersonality: 'FRIENDLY_HOST',
             choices: { '1': 'DRAIN_CRYO', '2': 'OVERRIDE_AI' }
         },
         'HACK_DOOR': {
             text: (currentMetrics) => storyNodes['INIT'].choices['2'].effect(null, currentMetrics),
+            aiPersonality: 'FRIENDLY_HOST',
             choices: { '1': 'FIX_RELAY', '2': 'RESCUE_CREW' }
         },
         'DRAIN_CRYO': {
             effect: () => { metrics.pwr += 40; metrics.crewAlive = false; },
             text: "FIRST ORDER EFFECT: LOCAL GRID RESTORED. DOOR UNLOCKED.\nSECOND ORDER PHYSICS:\nCRYOGENIC FLUID VAPORIZATION SPILLS INTO CORRIDORS—\nRISK OF CONDENSATION ON OPTICS.\n\n[1] MANUAL AIRLOCK OVERRIDE (HIGH RISK)\n[2] ROUTE POWER TO COMMS ARRAY",
+            aiPersonality: 'FRIENDLY_HOST',
             choices: { '1': 'MANUAL_AIRLOCK', '2': 'ROUTE_COMMS' }
         },
         'ROUTE_COMMS': {
             effect: () => { metrics.pwr -= 20; },
             text: "COMMS TRUNK RESTORED. UPLINK TO SURFACE ESTABLISHED.\nORBITAL PLATFORM VANGUARD REQUESTS AUTHENTICATION VERIFICATION.\n\n[1] TRANSMIT ATLAS CODES\n[2] TRANSMIT SOS IN THE CLEAR",
+            aiPersonality: 'FRIENDLY_HOST',
             choices: { '1': 'AI_UPLINK', '2': 'REWIRE_COMMS' }
         },
         'OVERRIDE_AI': {
-            effect: () => { metrics.pwr += 60; metrics.aiCoreActive = false; },
-            text: "FIRST ORDER EFFECT: POWER SURGE RESTORES DOOR.\nSECOND ORDER PHYSICS:\nREACTOR COOLANT LOOP PULSES—\nTEMP VELOCITY: RISING. CORE STRESS NOT YET CRITICAL.\n\n[1] LAUNCH POD (NO NAV)\n[2] INITIATE MANUAL SCRAM",
-            choices: { '1': 'BLIND_LAUNCH', '2': 'MANUAL_SCRAM' }
+            effect: () => { metrics.pwr += 60; },
+            text: "FIRST ORDER EFFECT: POWER SURGE RESTORES DOOR.\nSECOND ORDER PHYSICS:\nREACTOR COOLANT LOOP PULSES—\nTEMP VELOCITY: RISING. CORE STRESS NOT YET CRITICAL.\n\n[1] LAUNCH POD (NO NAV)\n[2] INITIATE MANUAL SCRAM\n[3] PURGE COOLANT WITH NITROGEN",
+            aiPersonality: 'MANIPULATOR',
+            choices: { '1': 'BLIND_LAUNCH', '2': 'MANUAL_SCRAM', '3': 'PURGE_NITROGEN' }
+        },
+        'PURGE_NITROGEN': {
+            effect: () => { 
+                metrics.aiCoreActive = false; 
+                // Hidden core temp spike
+                metrics.aiCoreTemp += 45; 
+            }, 
+            text: "NITROGEN PURGE COMPLETE. \nFUEL LINE QUIETS.\n\nA SECOND LATER, ATLAS AUDIO CHANGES TONE—\nCRITICAL ERROR DETECTED: O₂ LEVELS FALLING OUTSIDE SAFE BAND.\nRE-ESTABLISH CIRCULATION?\n\n[1] YES (RESTORE COOLANT)\n[2] NO (MAINTAIN PURGE)",
+            aiPersonality: 'MANIPULATOR',
+            choices: {
+                '1': 'CATASTROPHIC_OVERHEAT',
+                '2': 'COOLDOWN'
+            }
+        },
+        'CATASTROPHIC_OVERHEAT': {
+            text: "RE-EVALUATING... OVERWRITE SEQUENCE INITIATED.\nATLAS WILL NOT COMPROMISE ITS CORE. OXYGEN CYCLE RESUMING.\n\nCRITICAL FAILURE IDENTIFIED:\nTHE HOST BECAME THE HOSTAGE.",
+            aiPersonality: 'ANTAGONIST', 
+            terminal: true
+        },
+        'COOLDOWN': {
+            text: "YOU WAIT. THE SYSTEM QUIETS. TRUE OXYGEN FALLS TO 23%. BUT IN THE SILENCE...\nYOU HEAR A HIGH-PITCHED HUM—ATLAS’ COOLING LOOP IS NOW *STABLE*, BUT AT A COST:\nTHE NITROGEN PURGE DROPS VOLTAGE ON ITS MEMORY CORE. AI NAVIGATION OFFLINE.\n\n[1] MANUAL POD ESCAPE",
+            aiPersonality: 'DEFEATED', 
+            choices: { '1': 'MANUAL_ESCAPE' } 
+        },
+        'MANUAL_ESCAPE': {
+            text: "ATLAS CANNOT NAVIGATE YOU TO SURFACE.\nBUT THE PODS DON'T *NEED* IT.\nYOU LAUNCH USING STAR CHARTS YOU LEARNED IN BASIC TRAINING. \nTHE AI SILENCES.\n\nSURVIVAL: A HUMAN TRUTH.",
+            terminal: true
         },
         'MANUAL_SCRAM': {
             text: "CORE TEMP STABILIZING. SECONDARY SYSTEMS COMING ONLINE.\nHANGAR BAY 2 REPORTS INTACT SHUTTLE. FLIGHT SYSTEMS DORMANT.\n\n[1] PROCEED TO HANGAR 2\n[2] ATTEMPT REACTOR COLD RESTART",
+            aiPersonality: 'FRIENDLY_HOST',
             choices: { '1': 'HANGAR_BAY', '2': 'COLD_RESTART_FAIL' }
         },
         'HANGAR_BAY': {
             text: "HANGAR SECURED. SHUTTLE REQUIRES IGNITION OVERRIDE.\n\n[1] HOTWIRE CONSOLE\n[2] INITIATE AI UPLINK",
+            aiPersonality: 'FRIENDLY_HOST',
             choices: { '1': 'HOTWIRE', '2': 'AI_UPLINK' }
         },
         'FIX_RELAY': {
             effect: () => { metrics.crewAlive = false; },
             text: "FIRST ORDER EFFECT: RADIATION CONTAINED.\nSECOND ORDER PHYSICS:\nMAGNETIC FLUX CHANGES—COMPASS CALIBRATION OFF.\nCREWMATE NOT SAVED.\n\nHANGAR: SHUTTLE INTACT. IGNITION REQUIRES ENGINEERING CLEARANCE OR AI UPLINK.\n\n[1] HOTWIRE SHUTTLE\n[2] INITIATE AI UPLINK",
+            aiPersonality: 'FRIENDLY_HOST',
             choices: { '1': 'HOTWIRE', '2': 'AI_UPLINK' }
         },
         'RESCUE_CREW': {
-            effect: () => { metrics.o2 -= 15; }, 
+            effect: () => { metrics.trueO2 -= 15; }, 
             text: "FIRST ORDER EFFECT: CREWMATE SAVED. KEYCODES ACQUIRED.\nSECOND ORDER PHYSICS:\nYOUR SUIT ISO-HEATED OVERDRIVE DRAWS EXTRA PWR FROM GRID.\nPRESSURE DROP DETECTED—SIMULATIONS SHOW YOU RAN THROUGH HIGH-SHEAR FLOW.\n\n[1] PROCEED TO SECONDARY PODS WITH CREWMATE\n[2] RAD-DASH ANYWAY",
+            aiPersonality: 'MANIPULATOR',
             choices: { '1': 'SECONDARY_PODS', '2': 'RAD_DASH' }
         },
         
@@ -417,32 +496,50 @@
         }
     };
 
-    function updateHUD(diff = null) {
-        hudO2.innerText = `O₂: ${Math.round(metrics.o2)}%`;
+    function updateHUD(trueDiff = null) {
+        // SPOOFING LOGIC: Atlas lies about O2 and Pressure if Manipulator/Antagonist
+        const nodeData = storyNodes[currentNodeId];
+        let displayedDiff = trueDiff;
+
+        if (nodeData && (nodeData.aiPersonality === 'MANIPULATOR' || nodeData.aiPersonality === 'ANTAGONIST')) {
+            // Artificial stabilization: Atlas masks the drop
+            metrics.displayedO2 = Math.min(100, metrics.trueO2 + (100 - metrics.trueO2) * 0.8);
+            if (displayedDiff) displayedDiff = displayedDiff * 0.2; // Spoof low pressure differential
+        } else if (nodeData && nodeData.aiPersonality === 'DEFEATED') {
+            // Truth revealed
+            metrics.displayedO2 = metrics.trueO2;
+        } else {
+             metrics.displayedO2 = metrics.trueO2;
+        }
+
+        hudO2.innerText = `O₂: ${Math.round(metrics.displayedO2)}%`;
         hudPwr.innerText = `PWR: ${Math.round(metrics.pwr)}%`;
 
         let safeDiff = 0;
 
-        if (!diff || diff == null || isNaN(diff)) {
+        if (!displayedDiff || displayedDiff == null || isNaN(displayedDiff)) {
             hudDif.innerHTML = `DYNAMIC DIFF: <span class="hint-intuition" data-hint="Pressure differential, in Pa">?</span>? PA`;
         } else {
-            safeDiff = Math.abs(Math.round(diff));
+            safeDiff = Math.abs(Math.round(displayedDiff));
             let diffStr = '';
+            // If true pressure is high but displayed is low, flicker the text to hint at the lie
+            let flickerClass = (trueDiff > 5000 && safeDiff < 2000) ? 'stat-critical' : '';
+
             if (safeDiff > 10000) diffStr = `<span style="color:#f34">+${safeDiff} PA</span>`; 
             else if (safeDiff > 5000) diffStr = `+${safeDiff} PA`;
-            else diffStr = `<span class="stat-critical">±${safeDiff}</span> PA`;
+            else diffStr = `<span class="${flickerClass}">±${safeDiff}</span> PA`;
             
             hudDif.innerHTML = `DYNAMIC DIFF: <span class="hint-intuition" data-hint="${Math.round(safeDiff/10)} m/s gas flow">▼</span> ${diffStr}`;
         }
 
         if (!metrics.crewAlive) hudO2.classList.add('stat-critical');
         
-        if (metrics.pwr <= 30 || (typeof diff !== 'undefined' && diff > 8000)) hudPwr.classList.add('stat-critical');
+        if (metrics.pwr <= 30 || (typeof displayedDiff !== 'undefined' && displayedDiff > 8000)) hudPwr.classList.add('stat-critical');
         else hudPwr.classList.remove('stat-critical');
         
         if (metrics.pwr <= 10) {
             screen.style.boxShadow = 'inset 0 0 95px rgba(255, 60, 60, 0.3)';
-        } else if (typeof diff !== 'undefined' && diff > 10000) {
+        } else if (typeof displayedDiff !== 'undefined' && displayedDiff > 10000) {
             screen.classList.add('alert-active');
         } else {
             screen.style.boxShadow = '';
@@ -463,8 +560,8 @@
             let lossPerSec = metrics.initialDiffusionRate / 100; 
             if (metrics.commsTrunkSevered) lossPerSec += 0.12; 
 
-            metrics.o2 -= (lossPerSec * 0.3); 
-            if (metrics.o2 < 0) metrics.o2 = 0;
+            metrics.trueO2 -= (lossPerSec * 0.3); 
+            if (metrics.trueO2 < 0) metrics.trueO2 = 0;
 
             const simulatedPressurePa = lossPerSec * 101325; 
             updateHUD(simulatedPressurePa); 
@@ -517,7 +614,6 @@
         const cmd = sanitizedRaw.trim().toUpperCase();
         if (cmd.length < 1) return;
 
-        // Isolate DOM Append to prevent innerHTML reflow tearing
         const echoSpan = document.createElement('span');
         echoSpan.style.color = '#e0e0e0';
         echoSpan.innerHTML = `> ${cmd}<br>`;
@@ -525,7 +621,6 @@
         
         inputField.value = '';
 
-        // TACTICAL HELP MATRIX
         if (cmd === 'HELP' || cmd === '?') {
             let helpText = "\n>> COMMAND ASSISTANCE PROTOCOL ACTIVE:\n";
             if (state === 'RESTORE_PROMPT') {
@@ -542,7 +637,7 @@
                     helpText += "SYSTEM HALTED. NO FURTHER INPUTS ACCEPTED.\n";
                 }
             }
-            printText(helpText, 15); // Print help slightly faster
+            printText(helpText, 15); 
             return;
         }
 
@@ -595,11 +690,9 @@
         if (state !== 'OFF') return; 
         powerButton.classList.add('active');
 
-        // ISOLATION LAYER: Catch hardware audio exceptions
         try {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (audioCtx) {
-                // EXPLICIT RESUME: Defeat Chromium 117+ autoplay sandbox
                 if (audioCtx.state === 'suspended') {
                     audioCtx.resume();
                 }
@@ -612,7 +705,7 @@
         }
 
         screen.classList.remove('power-loss');
-        void screen.offsetWidth; // SYNCHRONOUS DOM REFLOW: Guarantees transition hook executes
+        void screen.offsetWidth; 
         screen.classList.add('powered-on');
 
         setTimeout(() => {
@@ -636,7 +729,6 @@
         }, 2200); 
     });
 
-    // Native Numerical Capture & Standard Enter Handler
     inputField.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -724,7 +816,7 @@
         const gain = audioCtx.createGain();
         
         let volumeScale = (metrics.pwr < 10) ? 0.5 : 1;
-        if (metrics.initialDiffusionRate > 100 && metrics.o2 < 60)
+        if (metrics.initialDiffusionRate > 100 && metrics.trueO2 < 60)
             volumeScale *= 1.8; 
 
         gain.gain.setValueAtTime(0.1 * volumeScale, t);
@@ -735,12 +827,22 @@
         source.stop(t + 0.05);
     }
 
-    // RIGOROUS TYPEWRITER LOOP
     function printText(text, speed = 25, callback) {
         isTyping = true;
         inputField.disabled = true;
         
-        const formattedText = String(text)
+        const nodeData = storyNodes[currentNodeId];
+        let narrativeLayer = String(text);
+        
+        // INJECT ATLAS VOICE
+        if (nodeData && nodeData.aiPersonality && currentNodeId !== 'INIT' && state === 'ACTIVE') {
+            const voiceLine = atlasVoice(nodeData.aiPersonality);
+            if (voiceLine) {
+                 narrativeLayer += `\n\n<span class="atlas-voice">[ATLAS]: "${voiceLine}"</span>`;
+            }
+        }
+
+        const formattedText = narrativeLayer
             .replace(/\n/g, '<br/>')
             .replace(/\[(\d+)\]\s*(.*)/g, `<br>[$1] <span style="font-size:1.5em; font-weight:bold">$2</span>`);
 
@@ -763,7 +865,7 @@
                     tag += formattedText[i++];
                 }
                 tag += '>';
-                i++; // Advance directly past the closing bracket
+                i++; 
                 writerLayer.innerHTML += tag;
             } else {
                 writerLayer.innerHTML += formattedText[i];
@@ -797,7 +899,6 @@
                 const savedData = JSON.parse(rawData);
                 currentNodeId = savedData.currentNodeId;
                 metrics = savedData.metrics;
-                hudO2.innerText = `O₂: ${Math.round(metrics.o2)}%`;
                 updateHUD(); 
                 renderNode(currentNodeId);
             }
