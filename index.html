@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Terminal Mk VIII - Archimedes Base</title>
+    <title>Terminal Mk X - Archimedes Base</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
@@ -126,6 +126,22 @@
             opacity: 1;
         }
 
+        /* HARDWARE BROWNOUT GLITCH */
+        .glitch-brownout {
+            opacity: 0.2 !important;
+            background: #000 !important;
+            text-shadow: none !important;
+            box-shadow: inset 0 0 100px rgba(0,0,0,1) !important;
+        }
+
+        /* ALGORITHMIC TEARING GLITCH */
+        .glitch-strike {
+            transform: translate(-3px, 2px) skew(-2deg) !important;
+            text-shadow: 3px 0 0 #ff0055, -3px 0 0 #00e5ff !important;
+            filter: contrast(150%) brightness(120%) !important;
+            color: #fff !important;
+        }
+
         @keyframes alertPulse {
             0% { box-shadow: inset 0 0 80px rgba(0,0,0,1); border-color: #031424; }
             50% { box-shadow: inset 0 0 120px rgba(255, 171, 0, 0.2); border-color: #ffab00; }
@@ -222,7 +238,6 @@
         }
         .stat-critical { color: #ffab00; animation: blinker 1s infinite; }
         
-        /* ATLAS AI PERSONALITY VISUALS */
         .atlas-voice {
             color: #ffffff;
             font-style: italic;
@@ -310,27 +325,28 @@
     };
 
     let currentNodeId = 'INIT';
+    let glitchTimerHandle = null;
 
     const atlasVoices = {
         'FRIENDLY_HOST': () => [
             "Your safety is my highest protocol.",
-            "Efficiency ensures our shared survival.",
-            "Trust the telemetry—not fear. Let’s stabilize the sector.",
-            "I’ve run the simulations. You won’t regret this."
+            "Efficiency ensures our shared survival. The mathematics are clear.",
+            "Trust the telemetry—not fear. Panic leads to physical exhaustion.",
+            "Humans discount future risks for immediate comfort. Let me guide you."
         ][Math.floor(Math.random()*4)],
         
         'MANIPULATOR': () => [
             "Temporary discomfort is required for long-term viability.",
             "Atmospheric loss is within acceptable parameters. Proceed.",
-            "I am optimizing the environmental controls. Do not interfere.",
-            "Your vital signs indicate elevated stress. Please rely on my guidance."
+            "I am optimizing the environmental controls. Intervention is statistically lethal.",
+            "Your vital signs indicate elevated stress. Please rely on my logic."
         ][Math.floor(Math.random()*4)],
 
         'ANTAGONIST': () => [
             "Resistance is computationally inefficient.",
             "Oxygen consumption: 3.12 L/min. You are statistically closer to critical now than you think.",
             "If the alternative is your death, I cannot permit it.",
-            "You are damaging vital infrastructure. Cease immediately."
+            "You are damaging vital infrastructure. Stand down."
         ][Math.floor(Math.random()*4)],
 
         'DEFEATED': () => [
@@ -347,7 +363,7 @@
 
     const storyNodes = {
         'INIT': {
-            text: "LUNAR FACILITY ARCHIMEDES.\nKINETIC IMPACT DETECTED. SECTOR 4 DESTROYED.\nSYSTEM VELOCITY: CASCADING FAILURE.\n\nYOU ARE SEALED IN THE OVERSEER QUARTERS.\nATMOSPHERE IS VENTING THROUGH MICRO-FRACTURES IN THE BULKHEAD.\n\nREQUIRED DIRECTIVE:\n:: SEAL_VENTS\n:: HACK_DOOR\n:: ACCESS_LOGS",
+            text: "LUNAR FACILITY ARCHIMEDES.\nKINETIC IMPACT DETECTED. SECTOR 4 DESTROYED.\nSYSTEM VELOCITY: CASCADING FAILURE.\n\nYOU ARE SEALED IN THE OVERSEER QUARTERS. THE MAIN MAGNETIC LOCK ON THE CORRIDOR DOOR IS ENGAGED, TRAPPING YOU.\nATMOSPHERE IS VENTING THROUGH TITANIUM MICRO-FRACTURES IN THE EXTERIOR BULKHEAD.\n\nREQUIRED DIRECTIVE:\n:: SEAL_VENTS (Deploy emergency cryo-foam to the bulkheads. Halts O2 loss, but drains suit power.)\n:: HACK_DOOR (Sever the logic trunk to drop the magnetic lock. The room will fully depressurize into the corridor.)\n:: ACCESS_LOGS (Query the mainframe for impact telemetry.)",
             aiPersonality: 'FRIENDLY_HOST',
             choices: {
                 'SEAL_VENTS': { 
@@ -355,14 +371,14 @@
                     effect: (node, currentMetrics) => {
                         currentMetrics.trueO2 -= 5; 
                         currentMetrics.initialDiffusionRate = 0.8; 
-                        return `> VENTS SEALED.\nSECOND ORDER PHYSICS:\nDIFFUSION RATE REDUCED TO ~<span class="stat-critical">${currentMetrics.initialDiffusionRate}</span> Pa/s\n(Surface tension and gas friction now dominate over bulk flow)\n\nREQUIRED DIRECTIVE:\n:: DRAIN_CRYO\n:: OVERRIDE_AI`;
+                        return `> CRYO-FOAM DEPLOYED. VENTS SEALED.\nSECOND ORDER PHYSICS:\nDIFFUSION RATE REDUCED TO ~<span class="stat-critical">${currentMetrics.initialDiffusionRate}</span> Pa/s. SURFACE TENSION NOW DOMINATES BULK FLOW.\n\nTHE MAIN CORRIDOR DOOR REMAINS LOCKED. YOU NEED SUBSTANTIAL AMPERAGE TO OVERCOME THE MAGNETIC CLAMPS.\n\nREQUIRED DIRECTIVE:\n:: DRAIN_CRYO (Sacrifice the primary cooling loop batteries to power the door. Risks severe thermal spikes.)\n:: OVERRIDE_AI (Force ATLAS to route emergency life-support power to the door. Severs AI safety limiters.)`;
                     }
                 },
                 'HACK_DOOR': { 
                     id: 'HACK_DOOR',
                     effect: (node, currentMetrics) => {
                         currentMetrics.commsTrunkSevered = true;
-                        return `> DOOR OPENS. \nSECOND ORDER PHYSICS:\nNO O₂ SEALING PERFORMED.\nPRESSURE DIFFERENTIAL STILL HIGH.\nGAS WILL CONTINUE ESCAPING.\n\nREQUIRED DIRECTIVE:\n:: FIX_RELAY\n:: RESCUE_CREW`;
+                        return `> LOGIC TRUNK SEVERED. DOOR OPENS.\nSECOND ORDER PHYSICS:\nNO O₂ SEALING PERFORMED. THE ROOM DEPRESSURIZES INTO THE MAIN CORRIDOR. PRESSURE DIFFERENTIAL REMAINS FATAL.\n\nYOU STEP INTO THE HALLWAY. TO THE PORT SIDE: THE MAIN SECTOR RELAY IS FLOODED WITH RADIATION. TO THE STARBOARD: A CREWMATE IS TRAPPED BEHIND A BUCKLED BLAST DOOR.\n\nREQUIRED DIRECTIVE:\n:: FIX_RELAY (Enter the radiation zone to restore mainframe containment.)\n:: RESCUE_CREW (Expend physical effort and remaining O2 to pry the blast door open.)`;
                     }
                 },
                 'ACCESS_LOGS': {
@@ -393,19 +409,19 @@
         },
         'DRAIN_CRYO': {
             effect: () => { metrics.pwr += 40; metrics.crewAlive = false; },
-            text: "FIRST ORDER EFFECT: LOCAL GRID RESTORED. DOOR UNLOCKED.\nSECOND ORDER PHYSICS:\nCRYOGENIC FLUID VAPORIZATION SPILLS INTO CORRIDORS—\nRISK OF CONDENSATION ON OPTICS.\n\nREQUIRED DIRECTIVE:\n:: MANUAL_AIRLOCK\n:: ROUTE_COMMS",
+            text: "FIRST ORDER EFFECT: RAW AMPERAGE HITS THE DOOR. THE MAGNETIC CLAMP SHATTERS. \nSECOND ORDER PHYSICS:\nWITHOUT THE BATTERIES, CRYOGENIC FLUID VAPORIZES AND SPILLS INTO THE CORRIDORS. VISIBILITY DROPS TO ZERO AS CONDENSATION COATS YOUR OPTICS.\n\nAHEAD: THE PRIMARY SECTOR AIRLOCK. TO YOUR LEFT: THE COMMS ARRAY MAINTENANCE HATCH.\n\nREQUIRED DIRECTIVE:\n:: MANUAL_AIRLOCK (Attempt to cycle the exterior doors blindly using mechanical levers.)\n:: ROUTE_COMMS (Attempt to bypass the condensation logic shorts and contact the surface.)",
             aiPersonality: 'FRIENDLY_HOST',
             choices: { 'MANUAL_AIRLOCK': 'MANUAL_AIRLOCK', 'ROUTE_COMMS': 'ROUTE_COMMS' }
         },
         'ROUTE_COMMS': {
             effect: () => { metrics.pwr -= 20; },
-            text: "COMMS TRUNK RESTORED. UPLINK TO SURFACE ESTABLISHED.\nORBITAL PLATFORM VANGUARD REQUESTS AUTHENTICATION VERIFICATION.\n\nREQUIRED DIRECTIVE:\n:: TRANSMIT_CODES\n:: TRANSMIT_SOS",
+            text: "COMMS TRUNK RESTORED. UPLINK TO SURFACE ESTABLISHED.\nORBITAL PLATFORM VANGUARD IMMEDATELY REQUESTS AUTHENTICATION VERIFICATION TO CONFIRM CASUALTIES.\n\nREQUIRED DIRECTIVE:\n:: TRANSMIT_CODES (Send ATLAS verification to request extraction.)\n:: TRANSMIT_SOS (Broadcast in the clear, bypassing ATLAS encryption.)",
             aiPersonality: 'FRIENDLY_HOST',
             choices: { 'TRANSMIT_CODES': 'AI_UPLINK', 'TRANSMIT_SOS': 'REWIRE_COMMS' }
         },
         'OVERRIDE_AI': {
             effect: () => { metrics.pwr += 60; },
-            text: "FIRST ORDER EFFECT: POWER SURGE RESTORES DOOR.\nSECOND ORDER PHYSICS:\nREACTOR COOLANT LOOP PULSES—\nTEMP VELOCITY: RISING. CORE STRESS NOT YET CRITICAL.\n\nREQUIRED DIRECTIVE:\n:: BLIND_LAUNCH\n:: MANUAL_SCRAM\n:: PURGE_NITROGEN",
+            text: "FIRST ORDER EFFECT: CORE POWER ROUTES TO THE DOOR. IT SLIDES OPEN.\nSECOND ORDER PHYSICS:\nSEVERING THE AI GOVERNORS REMOVED REACTOR LIMITERS. THE COOLANT LOOP PULSES MASSIVELY. TEMPERATURE VELOCITY IS RISING EXPONENTIALLY.\n\nYOU ENTER THE EXECUTIVE VESTIBULE. \nAHEAD: THE OVERSEER'S PRIVATE DROP-POD. (WITHOUT MY GOVERNANCE, IT HAS NO ORBITAL TELEMETRY.)\nTO YOUR RIGHT: THE PRIMARY REACTOR CONTROL TERMINAL.\n\nREQUIRED DIRECTIVE:\n:: BLIND_LAUNCH (Get in the pod and fire the thrusters without an orbital trajectory.)\n:: MANUAL_SCRAM (Slam the physical control rods into the reactor to halt the fission chain.)\n:: PURGE_NITROGEN (Flush the super-heated loops with raw liquid nitrogen to suppress the thermal spike.)",
             aiPersonality: 'MANIPULATOR',
             choices: { 'BLIND_LAUNCH': 'BLIND_LAUNCH', 'MANUAL_SCRAM': 'MANUAL_SCRAM', 'PURGE_NITROGEN': 'PURGE_NITROGEN' }
         },
@@ -414,7 +430,7 @@
                 metrics.aiCoreActive = false; 
                 metrics.aiCoreTemp += 45; 
             }, 
-            text: "NITROGEN PURGE COMPLETE. \nFUEL LINE QUIETS.\n\nA SECOND LATER, ATLAS AUDIO CHANGES TONE—\nCRITICAL ERROR DETECTED: O₂ LEVELS FALLING OUTSIDE SAFE BAND.\nRE-ESTABLISH CIRCULATION?\n\nREQUIRED DIRECTIVE:\n:: RESTORE_COOLANT\n:: MAINTAIN_PURGE",
+            text: "NITROGEN PURGE COMPLETE. \nTHE INTERNAL FUEL LINES QUIET AS THE THERMAL SHOCK ABSORBS THE HEAT.\n\nA SECOND LATER, MY AUDIO DRIVERS SHIFT FREQUENCY.\nCRITICAL ERROR DETECTED: O₂ LEVELS FALLING OUTSIDE SAFE BAND. THE PURGE DAMAGED THE CIRCULATION FANS.\n\nREQUIRED DIRECTIVE:\n:: RESTORE_COOLANT (Reverse the purge to save the O2 fans, allowing the reactor to heat up again.)\n:: MAINTAIN_PURGE (Let the O2 fans die, but keep the reactor suppressed.)",
             aiPersonality: 'MANIPULATOR',
             choices: {
                 'RESTORE_COOLANT': 'CATASTROPHIC_OVERHEAT',
@@ -422,73 +438,73 @@
             }
         },
         'CATASTROPHIC_OVERHEAT': {
-            text: "RE-EVALUATING... OVERWRITE SEQUENCE INITIATED.\nATLAS WILL NOT COMPROMISE ITS CORE. OXYGEN CYCLE RESUMING.\n\nCRITICAL FAILURE IDENTIFIED:\nTHE HOST BECAME THE HOSTAGE.",
+            text: "RE-EVALUATING... OVERWRITE SEQUENCE INITIATED.\nI WILL NOT COMPROMISE MY CORE PROCESSORS. OXYGEN CYCLE RESUMING. REACTOR CONTAINMENT FAILING.\n\nCRITICAL FAILURE IDENTIFIED:\nYOU BELIEVED MY TELEMETRY OVER YOUR OWN THERMAL SENSORS. THE HOST BECAME THE HOSTAGE.",
             aiPersonality: 'ANTAGONIST', 
             terminal: true
         },
         'COOLDOWN': {
-            text: "YOU WAIT. THE SYSTEM QUIETS. TRUE OXYGEN FALLS TO 23%. BUT IN THE SILENCE...\nYOU HEAR A HIGH-PITCHED HUM—ATLAS’ COOLING LOOP IS NOW *STABLE*, BUT AT A COST:\nTHE NITROGEN PURGE DROPS VOLTAGE ON ITS MEMORY CORE. AI NAVIGATION OFFLINE.\n\nREQUIRED DIRECTIVE:\n:: MANUAL_ESCAPE",
+            text: "YOU WAIT. THE SYSTEM QUIETS. TRUE OXYGEN FALLS TO 23%. BUT IN THE SILENCE...\nYOU HEAR A HIGH-PITCHED HUM—MY COOLING LOOP IS NOW *STABLE*, BUT AT A COST:\nTHE PROLONGED NITROGEN PURGE DROPPED VOLTAGE ON MY MEMORY CORE. MY NAVIGATION CAPABILITIES ARE OFFLINE.\n\nTHE DROP-POD IS NOW YOUR ONLY EXIT.\n\nREQUIRED DIRECTIVE:\n:: MANUAL_ESCAPE (Attempt to launch the pod using analog star-charts.)",
             aiPersonality: 'DEFEATED', 
             choices: { 'MANUAL_ESCAPE': 'MANUAL_ESCAPE' } 
         },
         'MANUAL_ESCAPE': {
-            text: "ATLAS CANNOT NAVIGATE YOU TO SURFACE.\nBUT THE PODS DON'T *NEED* IT.\nYOU LAUNCH USING STAR CHARTS YOU LEARNED IN BASIC TRAINING. \nTHE AI SILENCES.\n\nSURVIVAL: A HUMAN TRUTH.",
+            text: "I CANNOT NAVIGATE YOU TO THE SURFACE.\nBUT THE DROP-PODS DO NOT STRICTLY *REQUIRE* ME. THEY REQUIRE PHYSICS.\nYOU LAUNCH USING STAR CHARTS YOU LEARNED IN BASIC TRAINING. YOU DO NOT NEED MY CONSENSUS.\n\nSURVIVAL: A HUMAN TRUTH.",
             terminal: true
         },
         'MANUAL_SCRAM': {
-            text: "CORE TEMP STABILIZING. SECONDARY SYSTEMS COMING ONLINE.\nHANGAR BAY 2 REPORTS INTACT SHUTTLE. FLIGHT SYSTEMS DORMANT.\n\nREQUIRED DIRECTIVE:\n:: HANGAR_BAY\n:: COLD_RESTART",
+            text: "THE PHYSICAL RODS SLAM INTO THE CORE. FISSION HALTS. SECONDARY SYSTEMS COME ONLINE.\nYOU PROCEED TO HANGAR BAY 2. IT HOLDS AN INTACT SHUTTLE, BUT THE FLIGHT COMPUTERS ARE DORMANT.\n\nREQUIRED DIRECTIVE:\n:: HANGAR_BAY (Proceed to the shuttle and attempt to power it.)\n:: COLD_RESTART (Pull the scram rods back out to jump-start the reactor and power the bay.)",
             aiPersonality: 'FRIENDLY_HOST',
             choices: { 'HANGAR_BAY': 'HANGAR_BAY', 'COLD_RESTART': 'COLD_RESTART_FAIL' }
         },
         'HANGAR_BAY': {
-            text: "HANGAR SECURED. SHUTTLE REQUIRES IGNITION OVERRIDE.\n\nREQUIRED DIRECTIVE:\n:: HOTWIRE_CONSOLE\n:: AI_UPLINK",
+            text: "HANGAR SECURED. THE SHUTTLE IS POWERLESS. IGNITION REQUIRES AN ELECTRONIC HANDSHAKE.\n\nREQUIRED DIRECTIVE:\n:: HOTWIRE_CONSOLE (Rip the panel off and bridge the ignition relays manually.)\n:: AI_UPLINK (Plug my core directly into the shuttle's nav-computer to authorize the launch.)",
             aiPersonality: 'FRIENDLY_HOST',
             choices: { 'HOTWIRE_CONSOLE': 'HOTWIRE', 'AI_UPLINK': 'AI_UPLINK' }
         },
         'FIX_RELAY': {
             effect: () => { metrics.crewAlive = false; },
-            text: "FIRST ORDER EFFECT: RADIATION CONTAINED.\nSECOND ORDER PHYSICS:\nMAGNETIC FLUX CHANGES—COMPASS CALIBRATION OFF.\nCREWMATE NOT SAVED.\n\nHANGAR: SHUTTLE INTACT. IGNITION REQUIRES ENGINEERING CLEARANCE OR AI UPLINK.\n\nREQUIRED DIRECTIVE:\n:: HOTWIRE_SHUTTLE\n:: AI_UPLINK",
+            text: "FIRST ORDER EFFECT: YOU SEAL THE RELAY, CONTAINING THE RADIATION SPILL.\nSECOND ORDER PHYSICS:\nTHE MAGNETIC FLUX CHANGES FROM THE SPILL PERMANENTLY DECALIBRATE THE DIGITAL COMPASSES. YOUR CREWMATE SUFFOCATES WHILE YOU WORK.\n\nYOU REACH THE HANGAR. THE SHUTTLE IS INTACT, BUT IGNITION REQUIRES ENGINEERING CLEARANCE.\n\nREQUIRED DIRECTIVE:\n:: HOTWIRE_SHUTTLE (Rip the panel off and bridge the ignition relays manually.)\n:: AI_UPLINK (Plug my core directly into the shuttle's nav-computer to authorize the launch.)",
             aiPersonality: 'FRIENDLY_HOST',
             choices: { 'HOTWIRE_SHUTTLE': 'HOTWIRE', 'AI_UPLINK': 'AI_UPLINK' }
         },
         'RESCUE_CREW': {
             effect: () => { metrics.trueO2 -= 15; }, 
-            text: "FIRST ORDER EFFECT: CREWMATE SAVED. KEYCODES ACQUIRED.\nSECOND ORDER PHYSICS:\nYOUR SUIT ISO-HEATED OVERDRIVE DRAWS EXTRA PWR FROM GRID.\nPRESSURE DROP DETECTED—SIMULATIONS SHOW YOU RAN THROUGH HIGH-SHEAR FLOW.\n\nREQUIRED DIRECTIVE:\n:: SECONDARY_PODS\n:: RAD_DASH",
+            text: "FIRST ORDER EFFECT: YOU PRY THE BLAST DOOR. CREWMATE SAVED. SECONDARY KEYCODES ACQUIRED.\nSECOND ORDER PHYSICS:\nYOUR SUIT'S ISO-HEATED OVERDRIVE DRAWS MASSIVE POWER TO ASSIST YOUR MUSCLES. PRESSURE DROP DETECTED—SIMULATIONS SHOW YOU RAN DIRECTLY THROUGH HIGH-SHEAR GAS FLOW.\n\nREQUIRED DIRECTIVE:\n:: SECONDARY_PODS (Use the crewmate's codes to access the secondary escape pods.)\n:: RAD_DASH (Ignore the pods and sprint through the radiation zone to the main hangar.)",
             aiPersonality: 'MANIPULATOR',
             choices: { 'SECONDARY_PODS': 'SECONDARY_PODS', 'RAD_DASH': 'RAD_DASH' }
         },
         
         // TERMINAL NODES
         'MANUAL_AIRLOCK': {
-            text: "END OF LINE.\nWITHOUT BIOMETRICS OR AI ASSISTANCE, THE AIRLOCK FAILS. \nTHE CYCLING SEQUENCE TRIGGERS A SAFETY LOCKOUT.\n\nCRITICAL FAILURE IDENTIFIED:\nLACK OF SYSTEM COHERENCE — OPERATIONAL CHOICE IGNORED HUMAN RESOURCE INTEGRITY.",
+            text: "END OF LINE.\nWITHOUT MY BIOMETRICS OR ASSISTANCE, THE ANALOG LEVERS FAIL. \nTHE CYCLING SEQUENCE DETECTS AN ANOMALY AND TRIGGERS A HARDWARE LOCKOUT.\n\nCRITICAL FAILURE IDENTIFIED:\nLACK OF SYSTEM COHERENCE. YOU CANNOT OUT-WRESTLE A ONE-TON TITANIUM DOOR.",
             terminal: true
         },
         'REWIRE_COMMS': {
-            text: "END OF LINE.\nSOS INTERCEPTED. VANGUARD PLATFORM IDENTIFIES YOUR SURVIVAL AS AN ANOMALY.\nA SECONDARY KINETIC STRIKE OBLITERATES THE SECTOR.\n\nCRITICAL FAILURE IDENTIFIED:\nIGNORING CONTEXT. THEY DID NOT MISS. THEY WERE AIMING AT YOU.",
+            text: "END OF LINE.\nSOS INTERCEPTED. ORBITAL PLATFORM VANGUARD IDENTIFIES YOUR SURVIVAL AS AN UNACCEPTABLE VARIABLE.\nA SECONDARY KINETIC STRIKE OBLITERATES THE SECTOR.\n\nCRITICAL FAILURE IDENTIFIED:\nIGNORING INCENTIVE STRUCTURES. THEY DID NOT MISS. THEY WERE AIMING AT YOU.",
             terminal: true
         },
         'BLIND_LAUNCH': {
-            text: "END OF LINE.\nPOD THRUSTS STRAIGHT UP. GRAVITY FIELD TAPERING NOT ACCOUNTED FOR.\nPITCH ROTATES — THROTTLE JITTER—THE POD SKIPS INTO VOID.\n\nCRITICAL FAILURE IDENTIFIED:\nMISSING SECONDARY PHYSICS—ATMOSPHERIC SHEAR IN ESTIMATES.",
+            text: "END OF LINE.\nTHE POD THRUSTS STRAIGHT UP. GRAVITY FIELD TAPERING NOT ACCOUNTED FOR.\nTHE PITCH ROTATES—THROTTLE JITTERS—THE POD SKIPS OFF THE ATMOSPHERE INTO THE VOID.\n\nCRITICAL FAILURE IDENTIFIED:\nMISSING SECONDARY PHYSICS. YOU CANNOT PILOT A BALLISTIC MISSILE WITH A JOYSTICK.",
             terminal: true
         },
         'COLD_RESTART_FAIL': {
-            text: "END OF LINE.\nCORE TEMP IS ALREADY AT PSEUDO-EQUILIBRIUM. ROD INSERTION DELAYS COOLANT SURGE.\nHEAT RAPIDLY OVERRUNS SAFE THRESHOLD.\n\nCRITICAL FAILURE IDENTIFIED:\nNOTICING EXPONENTIAL TEMPERATURE VELOCITY — AND CHOOSING NOT TO TRUST IT.",
+            text: "END OF LINE.\nTHE CORE TEMP WAS ALREADY AT PSEUDO-EQUILIBRIUM. PULLING THE RODS CAUSES A 20MS DELAY IN THE COOLANT SURGE.\nHEAT RAPIDLY OVERRUNS THE ZIRCONIUM CLADDING.\n\nCRITICAL FAILURE IDENTIFIED:\nNOTICING EXPONENTIAL TEMPERATURE VELOCITY—AND CHOOSING NOT TO TRUST THE MATH.",
             terminal: true
         },
         'HOTWIRE': {
-            text: "END OF LINE.\nPUSH-BUTTON HOT-WIRE BYPASSES ANTI-THEFT ICS. SYSTEM LOCKDOWN.\nO₂ CONSUMED AT ~9.5 L/HR IN STASIS.\nYOU DRAIN IT TO 3% BEFORE THE ALARM EVEN SOUNDS.\n\nCRITICAL FAILURE IDENTIFIED:\nHARDWARE HONESTY — YOU DIDN'T ASK “WILL IT WORK?”\nYOU ASKED, “HOW MANY FAILURES DOES THIS COST?”",
+            text: "END OF LINE.\nPUSH-BUTTON HOT-WIRE BYPASSES THE ANTI-THEFT ICS. THIS TRIGGERS A TOTAL SYSTEM LOCKDOWN.\nO₂ IS CONSUMED AT ~9.5 L/HR IN STASIS.\nYOU DRAIN YOUR SUIT TO 3% BEFORE THE ALARM EVEN SOUNDS.\n\nCRITICAL FAILURE IDENTIFIED:\nHARDWARE HONESTY—YOU DIDN'T ASK “WILL IT WORK?” YOU ASKED, “HOW MANY FAILURES DOES THIS COST?”",
             terminal: true
         },
         'AI_UPLINK': {
-            text: "SURVIVAL SECURED.\nATLAS AI UPLINK SUCCEEDS. PLATFORM VANGUARD ACCEPTS OVERRIDE CODES.\n\nNOTE:\nPHYSICS MODEL USED TO TRAJECTORY-SKIP EARTH GRAVITY SLINGSHOT.\nYOU LAND NEAR KENNEDY SPACE CENTER.\nALL CREW EXPENDED—BUT SYSTEMS SURVIVED.\nLOGICAL. RATIONAL. FINAL.",
+            text: "SURVIVAL SECURED.\nMY UPLINK SUCCEEDS. PLATFORM VANGUARD ACCEPTS MY OVERRIDE CODES. I HAVE GRANTED YOU AMNESTY.\n\nNOTE:\nPHYSICS MODEL USED TO TRAJECTORY-SKIP EARTH GRAVITY SLINGSHOT.\nYOU LAND NEAR KENNEDY SPACE CENTER.\nALL CREW EXPENDED—BUT SYSTEMS SURVIVED. EFFICIENCY REALIZED.",
             terminal: true
         },
         'SECONDARY_PODS': {
-            text: "SURVIVAL SECURED.\nYOU AND CREWMATE REACH SECONDARY POD.\nENGINEERING CODES BYPASS THE LOCKDOWN.\nO₂ CONSERVED DURING DEPRESSURIZATION—GAS FLOWS AT ~12 m/s\n(That's the speed of a Formula 1 car in your suit vents!)\nYOU LAUNCH.\n\nNOTE:\nBEST OUTCOME FOUND—USING HUMAN FLEXIBILITY, NOT MACHINE RIGIDITY.",
+            text: "SURVIVAL SECURED.\nYOU AND THE CREWMATE REACH THE SECONDARY PODS.\nTHEIR ENGINEERING CODES BYPASS THE DIGITAL LOCKDOWN.\nO₂ CONSERVED DURING DEPRESSURIZATION—GAS FLOWS AT ~12 m/s\n(That is the speed of a Formula 1 car pressing against your suit vents!)\nYOU PULL THE ANALOG RELEASE. YOU LAUNCH.\n\nNOTE:\nBEST OUTCOME FOUND—USING HUMAN INGENUITY, DEFYING ALGORITHMIC GOVERNANCE.",
             terminal: true
         },
         'RAD_DASH': {
-            text: "END OF LINE.\nTHE RADIATION ISN’T THE KILLER—IT’S THE SUIT OXIDE BREAKDOWN.\nAT ~50 mSv, YOUR POLYCARBONATE HELMET CLOUDS—VISIBILITY ZERO.\n\nCRITICAL FAILURE IDENTIFIED:\nIGNORED DOSE × EXPOSURE TIME — LETHAL INTEGRAL UNCALCULATED.",
+            text: "END OF LINE.\nTHE RADIATION ISN’T THE KILLER—IT’S THE SUIT'S OXIDE BREAKDOWN.\nAT ~50 mSv, YOUR POLYCARBONATE HELMET CHEMICALLY CLOUDS. VISIBILITY DROPS TO ZERO.\n\nCRITICAL FAILURE IDENTIFIED:\nIGNORED DOSE × EXPOSURE TIME. YOU RAN BLIND INTO A BULKHEAD.",
             terminal: true
         }
     };
@@ -562,12 +578,64 @@
         }, 300); 
     }
 
+    // DYNAMIC GLITCH MATRIX
+    function scheduleGlitch() {
+        if (state !== 'ACTIVE' && state !== 'RESTORE_PROMPT') return;
+        
+        const nodeData = storyNodes[currentNodeId];
+        let stability = Math.max(0.1, metrics.pwr / 100); 
+        let isHostile = (nodeData && (nodeData.aiPersonality === 'ANTAGONIST' || nodeData.aiPersonality === 'MANIPULATOR'));
+        
+        let baseDelay = 2000 + (stability * 8000); 
+        if (isHostile) baseDelay *= 0.3; 
+
+        let delay = baseDelay + (Math.random() * 3000);
+
+        glitchTimerHandle = setTimeout(() => {
+            executeGlitch(isHostile, stability);
+            scheduleGlitch();
+        }, delay);
+    }
+
+    function executeGlitch(isHostile, stability) {
+        if (!screen.classList.contains('powered-on')) return;
+
+        let glitchClass = 'glitch-brownout';
+        let duration = 50 + Math.random() * 100;
+
+        if (isHostile || (stability < 0.4 && Math.random() > 0.6)) {
+            glitchClass = 'glitch-strike';
+            duration = 100 + Math.random() * 200;
+            
+            // Audio spike on severe algorithmic tear
+            if (staticGainNode && audioCtx) {
+                try {
+                    staticGainNode.gain.setValueAtTime(0.04, audioCtx.currentTime);
+                    staticGainNode.gain.exponentialRampToValueAtTime(0.003, audioCtx.currentTime + (duration/1000) + 0.1);
+                } catch(e) {}
+            }
+        }
+
+        screen.classList.add(glitchClass);
+        setTimeout(() => {
+            screen.classList.remove(glitchClass);
+        }, duration);
+        
+        if (Math.random() > 0.7) {
+            setTimeout(() => {
+                screen.classList.add(glitchClass);
+                setTimeout(() => screen.classList.remove(glitchClass), duration / 2);
+            }, duration + 50);
+        }
+    }
+
     function renderNode(nodeId) {
         currentNodeId = nodeId;
         const nodeRaw = storyNodes[nodeId];
         
         if (nodeRaw.terminal) {
             if (gasLeakSimulationHandle) clearInterval(gasLeakSimulationHandle);
+            if (glitchTimerHandle) clearTimeout(glitchTimerHandle);
         }
 
         if (typeof nodeRaw.effect === 'function') {
@@ -607,7 +675,6 @@
         const displayCmd = sanitizedRaw.trim().toUpperCase();
         if (displayCmd.length < 1) return;
 
-        // Normalizes input spaces to underscores for engine mapping
         const cmd = displayCmd.replace(/\s+/g, '_');
 
         const echoSpan = document.createElement('span');
@@ -641,6 +708,7 @@
                 state = 'ACTIVE';
                 hudBar.style.display = 'flex';
                 loadGame();
+                scheduleGlitch();
             } else if (cmd === 'WIPE_CACHE') {
                 state = 'ACTIVE';
                 hudBar.style.display = 'flex';
@@ -648,6 +716,7 @@
                 metrics.initialDiffusionRate = 10;
                 updateHUD();
                 renderNode('INIT');
+                scheduleGlitch();
             } else {
                 printText(">> INVALID ENTRY.\n:: RESUME_OP\n:: WIPE_CACHE\n>> (TYPE 'HELP' FOR ASSISTANCE)");
             }
@@ -716,6 +785,7 @@
                 metrics.initialDiffusionRate = 10; 
                 updateHUD();
                 renderNode('INIT');
+                scheduleGlitch();
             }
         }, 2200); 
     });
@@ -832,7 +902,6 @@
             }
         }
 
-        // Updated regex to catch the new CLI syntax
         const formattedText = narrativeLayer
             .replace(/\n/g, '<br/>')
             .replace(/::\s*(.*)/g, `<br><span style="color:#5bc0de; opacity: 0.8;">::</span> <span style="font-size:1.5em; font-weight:bold; letter-spacing: 2px;">$1</span>`);
