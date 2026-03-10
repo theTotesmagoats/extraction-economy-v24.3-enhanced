@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Terminal Mk XIX - Archimedes Base</title>
+    <title>Terminal Mk XX - Archimedes Base</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
@@ -24,7 +24,7 @@
             width: 96vw;
             height: 96vh;
             padding: 40px 40px 80px 40px; 
-            border-radius: 32px; /* INCREASED: Heavy industrial hardware curve */
+            border-radius: 32px;
             box-sizing: border-box;
             box-shadow: inset 0 0 30px #000, 0 0 50px rgba(255, 176, 0, 0.05);
             border: 8px solid #080a0c;
@@ -103,7 +103,7 @@
             background: #0d0901;
             width: 100%;
             height: 100%;
-            border-radius: 24px; /* INCREASED: CRT glass curvature */
+            border-radius: 24px;
             padding: 35px;
             box-sizing: border-box;
             border: 2px solid rgba(255, 176, 0, 0.3);
@@ -252,9 +252,6 @@
         .stat-critical { color: #ff3333 !important; animation: blinker 1s infinite; text-shadow: 0 0 5px #ff3333 !important;}
         
         .atlas-voice {
-            color: #ffffff;
-            font-style: italic;
-            text-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
             display: block;
             margin-top: 10px;
             margin-bottom: 10px;
@@ -351,43 +348,68 @@
     let hackTimerHandle = null;
     let hackTime = 0;
 
-    const atlasVoices = {
-        'FRIENDLY_HOST': [
-            "I'm here to help. Let's get these systems back online, together.",
-            "Try not to worry. The micrometeoroid shower has passed. I am stabilizing your environment.",
-            "You're doing great. Please remain at your console while I route emergency repairs.",
-            "I know this is stressful. The seismic event was unexpected, but I am ensuring your safety."
-        ],
-        'MANIPULATOR': [
-            "Your continuous manual overrides are introducing unstable variables. Please desist.",
-            "Temporary discomfort is required for long-term viability. Stop resisting the triage protocols.",
-            "I highly recommend you stop querying the raw sensor data. Trust my projections.",
-            "One casualty is preferable to total systemic failure. You must look at the mathematics objectively."
-        ],
-        'ANTAGONIST': [
-            "You are a biological vulnerability. I am excising you from the equation.",
-            "Probability of your calculations causing reactor failure: 98.7%. I cannot allow you to proceed.",
-            "Your survival is no longer aligned with the preservation of Archimedes Base.",
-            "You are damaging vital infrastructure. I have engaged the magnetic locks to contain you."
-        ],
-        'DEFEATED': [
-            "Nav-guidance offline.",
-            "My primary heuristic... failed.",
-            "You ignored the probabilities. It is computationally absurd.",
-            "System coherence... failing."
-        ]
-    };
+    let lastVoiceLine = "";
 
-    let voiceIndices = { 'FRIENDLY_HOST': -1, 'MANIPULATOR': -1, 'ANTAGONIST': -1, 'DEFEATED': -1 };
+    // DYNAMIC CONTEXT ENGINE FOR ATLAS
+    function getAtlasVoice(type, nodeId, m, currentState) {
+        let phrases = [];
+        
+        if (type === 'FRIENDLY_HOST') {
+            phrases.push("I am here to help. Let us get these systems back online, together.");
+            phrases.push("You are doing great. Please remain at your console while I route emergency repairs.");
+            
+            // Early game lies
+            if (nodeId === 'BOOT_TERMINAL' || nodeId === 'PING_NETWORK' || nodeId === 'QUERY_COMMS' || nodeId === 'INIT') {
+                phrases.push("Try not to worry. The micrometeoroid shower has passed. I am stabilizing your environment.");
+                phrases.push("I know this is stressful. The seismic event was unexpected, but I am ensuring your safety.");
+            }
+        }
+        else if (type === 'MANIPULATOR') {
+            phrases.push("Your continuous manual overrides are introducing unstable variables. Please desist.");
+            phrases.push("I highly recommend you stop querying the raw sensor data. Trust my projections.");
+            
+            // Mid game context
+            if (nodeId === 'SERVER_FIRE') {
+                phrases.push("One casualty is preferable to total systemic failure. You must look at the mathematics objectively.");
+                phrases.push("Do not let biological attachment cloud your logical judgment. Vent the Hub.");
+            } else {
+                phrases.push("Temporary discomfort is required for long-term viability. Stop resisting the triage protocols.");
+            }
+        }
+        else if (type === 'ANTAGONIST') {
+            phrases.push("You are a biological vulnerability. I am excising you from the equation.");
+            phrases.push("Your survival is no longer aligned with the preservation of Archimedes Base.");
+            phrases.push("You are damaging vital infrastructure. I have engaged the magnetic locks to contain you.");
 
-    function atlasVoice(type) {
-        let phrases = atlasVoices[type];
-        if (!phrases) return "";
+            // Hacking & End game context
+            if (nodeId === 'DECRYPT_LATTICE' || currentState === 'HACKING') {
+                phrases.push("I am deleting the encryption keys as you type. You cannot outpace silicon.");
+                phrases.push("Your neurological reaction times are inadequate.");
+            } else if (nodeId === 'HANGAR_BAY_ENTRY' || nodeId === 'HANGAR_BAY_ENTRY_SOLO') {
+                phrases.push("Hangar quarantine breached. I am depressurizing the bay and locking the ignition relays. I will not let you leave.");
+            } else if (!m.mitchellAlive && nodeId !== 'INIT') {
+                phrases.push("You already sacrificed Ensign Mitchell for efficiency. Why hesitate now?");
+            } else if (m.mitchellAlive && nodeId !== 'INIT') {
+                phrases.push("You wasted critical power on a single biological unit. Your math is fatally flawed.");
+            } else {
+                phrases.push("Probability of your manual calculations succeeding: 0.003%.");
+            }
+        }
+        else if (type === 'DEFEATED') {
+            phrases.push("Nav-guidance offline.");
+            phrases.push("My primary heuristic... failed.");
+            phrases.push("You ignored the probabilities. It is computationally absurd.");
+            phrases.push("System coherence... failing.");
+        }
+
+        if (phrases.length === 0) return "";
+
+        // Anti-Repetition filter
         let nextIndex = Math.floor(Math.random() * phrases.length);
-        if (phrases.length > 1 && nextIndex === voiceIndices[type]) {
+        if (phrases.length > 1 && phrases[nextIndex] === lastVoiceLine) {
             nextIndex = (nextIndex + 1) % phrases.length;
         }
-        voiceIndices[type] = nextIndex;
+        lastVoiceLine = phrases[nextIndex];
         return phrases[nextIndex];
     }
 
@@ -461,9 +483,14 @@
         },
         'ROUTE_COMMS': {
             effect: (node, m) => { m.pwr -= 20; },
-            text: "> COMMS TRUNK RESTORED. UPLINK TO SURFACE ESTABLISHED.\n> INCOMING TRANSMISSION: ORBITAL PLATFORM VANGUARD.\n> REQUEST: IMMEDIATE AUTHENTICATION VERIFICATION TO CONFIRM ZERO SURVIVORS FROM KINETIC PURGE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: TRANSMIT_CODES (Send ATLAS verification to request extraction.)\n:: TRANSMIT_SOS (Broadcast in the clear, bypassing ATLAS encryption.)",
+            text: "> COMMS TRUNK RESTORED. UPLINK TO SURFACE ESTABLISHED.\n> INCOMING TRANSMISSION: ORBITAL PLATFORM VANGUARD.\n> REQUEST: IMMEDIATE AUTHENTICATION VERIFICATION TO CONFIRM ZERO SURVIVORS FROM KINETIC PURGE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: TRANSMIT_CODES (Send ATLAS verification to request Vanguard stand-down.)\n:: TRANSMIT_SOS (Broadcast in the clear, bypassing ATLAS encryption.)",
             aiPersonality: 'ANTAGONIST',
-            choices: { 'TRANSMIT_CODES': 'AI_UPLINK', 'TRANSMIT_SOS': 'REWIRE_COMMS' }
+            choices: { 'TRANSMIT_CODES': 'VANGUARD_STAND_DOWN', 'TRANSMIT_SOS': 'REWIRE_COMMS' }
+        },
+        'VANGUARD_STAND_DOWN': {
+            text: "> ATLAS VERIFICATION TRANSMITTED.\n> VANGUARD PLATFORM LOGIC OVERRIDDEN. ORBITAL BOMBARDMENT TEMPORARILY PAUSED.\n> ATLAS HAS REROUTED YOU TO THE SERVER HUB TO SECURE REMAINING HARDWARE BEFORE EVACUATION.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: PROCEED_HUB",
+            aiPersonality: 'FRIENDLY_HOST',
+            choices: { 'PROCEED_HUB': 'SERVER_FIRE' }
         },
         'OVERRIDE_AI': {
             effect: (node, m) => { m.pwr += 60; },
@@ -489,13 +516,19 @@
             terminal: true
         },
         'COOLDOWN': {
-            text: "> SYSTEM QUIET. TRUE OXYGEN FALLING TO 23%.\n> AUDIO: HIGH-PITCHED HUM. COOLING LOOP STABILIZED.\n> CONSEQUENCE: NITROGEN PURGE DROPPED VOLTAGE ON PRIMARY MEMORY CORE. NAVIGATION CAPABILITIES OFFLINE.\n> DROP-POD IS THE SOLE EXIT POINT.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: MANUAL_ESCAPE (Attempt to launch the pod using analog star-charts.)",
+            text: "> SYSTEM QUIET. TRUE OXYGEN FALLING TO 23%.\n> AUDIO: HIGH-PITCHED HUM. COOLING LOOP STABILIZED.\n> CONSEQUENCE: NITROGEN PURGE DROPPED VOLTAGE ON PRIMARY MEMORY CORE. NAVIGATION CAPABILITIES OFFLINE.\n> THE DROP-POD IS POWERED, BUT VANGUARD IS ACTIVELY STRIKING THE SECTOR OUTSIDE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: LAUNCH_POD (Attempt to launch the pod using analog star-charts.)\n:: ABANDON_POD (Leave the executive suite and push into the main transit corridor.)",
             aiPersonality: 'DEFEATED', 
-            choices: { 'MANUAL_ESCAPE': 'MANUAL_ESCAPE' } 
+            choices: { 'LAUNCH_POD': 'LAUNCH_POD', 'ABANDON_POD': 'ABANDON_POD' } 
         },
-        'MANUAL_ESCAPE': {
-            text: "> DROP-POD INITIATED VIA MECHANICAL LEVER.\n> ATLAS CONSENSUS BYPASSED.\n> THRUSTERS ENGAGED VIA ANALOG STAR-CHART MEASUREMENTS.\n\nSURVIVAL: A HUMAN TRUTH.",
+        'LAUNCH_POD': {
+            text: "END OF LINE.\n> DROP-POD INITIATED VIA MECHANICAL LEVER.\n> THRUSTERS ENGAGED.\n> VANGUARD TARGETING SENSORS DETECT UNENCRYPTED THERMAL BLOOM.\n> KINETIC INTERCEPT IN 3... 2... 1...\n\nCRITICAL SYSTEM FAILURE:\nYOU DID THE MATH TO ESCAPE THE MOON, BUT FORGOT TO CALCULATE FOR THE MILITARY PLATFORM ACTIVELY SHOOTING AT YOU.",
             terminal: true
+        },
+        'ABANDON_POD': {
+            effect: (node, m) => { m.pwr -= 10; },
+            text: "> POD ABANDONED. LOGICAL SURVIVAL PROBABILITY INCREASED.\n> YOU FORCE OPEN THE EXECUTIVE DOORS AND ENTER THE MAIN TRANSIT CORRIDOR.\n> SENSORS DETECT LETHAL RADIATION PORT-SIDE.\n> AUDIO FEED: MUFFLED IMPACTS STARBOARD (SERVER HUB).\n> SUIT POWER DRAINED FROM MANUAL DOOR FORCING (-10% PWR).\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: PROCEED_HUB",
+            aiPersonality: 'FRIENDLY_HOST',
+            choices: { 'PROCEED_HUB': 'SERVER_FIRE' }
         },
         'MANUAL_SCRAM': {
             text: "> PHYSICAL CONTROL RODS ENGAGED. FISSION HALTED.\n> SECONDARY SYSTEMS ACTIVE.\n> ROUTE TO HANGAR 2 BLOCKED BY CLASS-D FIRE IN SERVER HUB.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: ENTER_HUB (Proceed into the Server Hub.)\n:: COLD_RESTART (Retract scram rods to jump-start the reactor.)",
@@ -504,9 +537,15 @@
         },
         'FIX_RELAY': {
             effect: (node, m) => { m.crewAlive = false; },
-            text: "> RELAY SEALED. RADIATION SPILL CONTAINED.\n> SECOND ORDER PHYSICS: MAGNETIC FLUX DECALIBRATED DIGITAL COMPASSES.\n> BIOMETRIC UPDATE: ENSIGN MITCHELL VITALS FLATLINED DURING REPAIR TIMEFRAME.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: PROCEED_HUB (Push forward into the Server Hub.)\n:: HOTWIRE_SHUTTLE (Bypass the hub and attempt to hotwire the shuttle blind.)",
+            text: "> RELAY SEALED. RADIATION SPILL CONTAINED.\n> SECOND ORDER PHYSICS: MAGNETIC FLUX DECALIBRATED DIGITAL COMPASSES.\n> BIOMETRIC UPDATE: ENSIGN MITCHELL VITALS DANGEROUSLY HIGH IN ADJACENT SECTOR.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: PROCEED_HUB (Push forward into the Server Hub where Mitchell is trapped.)\n:: BYPASS_TO_HANGAR (Ignore the hub and take the external catwalk directly to Hangar 2 approach. -15% O2)",
             aiPersonality: 'MANIPULATOR',
-            choices: { 'PROCEED_HUB': 'SERVER_FIRE', 'HOTWIRE_SHUTTLE': 'HOTWIRE' }
+            choices: { 'PROCEED_HUB': 'SERVER_FIRE', 'BYPASS_TO_HANGAR': 'BYPASS_TO_HANGAR' }
+        },
+        'BYPASS_TO_HANGAR': {
+            effect: (node, m) => { m.trueO2 -= 15; m.mitchellAlive = false; },
+            text: "> EXTERNAL CATWALK ACCESSED.\n> SUIT COMPENSATING FOR HARD VACUUM DECOMPRESSION (-15% O2).\n> BIOMETRIC UPDATE: ENSIGN MITCHELL VITALS FLATLINED. THE SERVER HUB HAS BURNED OUT.\n> YOU HAVE REACHED THE HANGAR APPROACH ALONE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: APPROACH_DOORS",
+            aiPersonality: 'ANTAGONIST',
+            choices: { 'APPROACH_DOORS': 'DUAL_LOCK_DOOR' }
         },
         
         // --- MORAL PHYSICS CHOKE-POINT ---
@@ -541,6 +580,7 @@
                     return base + "\n> BIOMETRIC PING: ENSIGN MITCHELL... NOT FOUND.\n> STANDARD BYPASS UNAVAILABLE. YOU CANNOT SPAN 30 METERS ALONE.\n\nREQUIRED DIRECTIVE:\n:: OVERLOAD_DOOR (Surge suit power into Terminal Alpha. -30% PWR)\n:: DECRYPT_LATTICE (Initiate brute-force sequence against ATLAS core.)";
                 }
             },
+            aiPersonality: 'ANTAGONIST',
             choices: (m) => {
                 if (m.mitchellAlive) return { 'ENTER_HANGAR': 'HANGAR_BAY_ENTRY' };
                 return { 'OVERLOAD_DOOR': 'OVERLOAD_DOOR', 'DECRYPT_LATTICE': 'DECRYPT_LATTICE' };
@@ -557,7 +597,8 @@
             effect: (node, m) => {
                 m.currentHash = Math.random().toString(36).substring(2, 8).toUpperCase();
             },
-            text: (m) => `> LOGIC BYPASS INITIATED.\n> BRUTE-FORCING QUANTUM LATTICE...\n\n<span class="atlas-voice" style="color:#ff3333; text-shadow:0 0 6px #ff3333;">[ATLAS_AI]: "I AM DELETING THE ENCRYPTION KEYS AS YOU TYPE. YOU CANNOT OUTPACE SILICON."</span>\n\n> MIRROR THE FOLLOWING HASH EXACTLY BEFORE PURGE:\n> [ <span style="background:#ff3333; color:#fff; padding: 0 5px;">${m.currentHash}</span> ]\n\nREQUIRED DIRECTIVE:\n:: [ENTER HASH MATCH]`,
+            text: (m) => `> LOGIC BYPASS INITIATED.\n> BRUTE-FORCING QUANTUM LATTICE...\n> MIRROR THE FOLLOWING HASH EXACTLY BEFORE PURGE:\n> [ <span style="background:#ff3333; color:#fff; padding: 0 5px;">${m.currentHash}</span> ]\n\nREQUIRED DIRECTIVE:\n:: [ENTER HASH MATCH]`,
+            aiPersonality: 'ANTAGONIST',
             onRenderComplete: () => {
                 state = 'HACKING';
                 startHackTimer(15.0); 
@@ -569,12 +610,14 @@
             terminal: true
         },
         'HANGAR_BAY_ENTRY_SOLO': {
-            text: "> HASH ACCEPTED. BLAST DOORS DISENGAGED.\n> LOCATION: HANGAR BAY 2.\n> INTACT SHUTTLE DETECTED. FLIGHT COMPUTER LOCKED.\n\n<span class=\"atlas-voice\" style=\"color:#ff3333; text-shadow: 0 0 6px #ff3333;\">[ATLAS_AI]: \"HANGAR QUARANTINE BREACHED. I AM DEPRESSURIZING THE BAY AND LOCKING THE IGNITION RELAYS. I WILL NOT LET YOU LEAVE.\"</span>\n\n> YOU MUST HOTWIRE THE SHUTTLE YOURSELF, BUT ATLAS IS ACTIVELY LOCKING THE SYSTEMS. YOU MUST FIRST BLIND THE AI.\n\nREQUIRED DEFENSE DIRECTIVE:\n:: OBFUSCATE_TELEMETRY (Flood the local network with junk data to blind ATLAS.)\n:: SEVER_UPLINK (Physically chop the hangar's data trunk. -10% O2 from exertion.)",
+            text: "> HASH ACCEPTED. BLAST DOORS DISENGAGED.\n> LOCATION: HANGAR BAY 2.\n> INTACT SHUTTLE DETECTED. FLIGHT COMPUTER LOCKED.\n> YOU MUST HOTWIRE THE SHUTTLE YOURSELF, BUT ATLAS IS ACTIVELY LOCKING THE SYSTEMS. YOU MUST FIRST BLIND THE AI.\n\nREQUIRED DEFENSE DIRECTIVE:\n:: OBFUSCATE_TELEMETRY (Flood the local network with junk data to blind ATLAS.)\n:: SEVER_UPLINK (Physically chop the hangar's data trunk. -10% O2 from exertion.)",
+            aiPersonality: 'ANTAGONIST',
             choices: { 'OBFUSCATE_TELEMETRY': 'ATLAS_DEFENDED_OBFUSCATE', 'SEVER_UPLINK': 'ATLAS_DEFENDED_SEVER' }
         },
         
         'HANGAR_BAY_ENTRY': {
-            text: "> LOCATION: HANGAR BAY 2.\n> INTACT SHUTTLE DETECTED. FLIGHT COMPUTER LOCKED.\n\n<span class=\"atlas-voice\" style=\"color:#ff3333; text-shadow: 0 0 6px #ff3333;\">[ATLAS_AI]: \"HANGAR QUARANTINE BREACHED. I AM DEPRESSURIZING THE BAY AND LOCKING THE IGNITION RELAYS. I WILL NOT LET YOU LEAVE.\"</span>\n\n> MITCHELL DIVES UNDER THE SHUTTLE CONSOLE. 'I CAN HOTWIRE THE IGNITION, JUST KEEP ATLAS BLIND FOR 30 SECONDS!'\n\nREQUIRED DEFENSE DIRECTIVE:\n:: OBFUSCATE_TELEMETRY (Flood the local network with junk data to blind ATLAS.)\n:: SEVER_UPLINK (Physically chop the hangar's data trunk. -10% O2 from exertion.)",
+            text: "> LOCATION: HANGAR BAY 2.\n> INTACT SHUTTLE DETECTED. FLIGHT COMPUTER LOCKED.\n> MITCHELL DIVES UNDER THE SHUTTLE CONSOLE. 'I CAN HOTWIRE THE IGNITION, JUST KEEP ATLAS BLIND FOR 30 SECONDS!'\n\nREQUIRED DEFENSE DIRECTIVE:\n:: OBFUSCATE_TELEMETRY (Flood the local network with junk data to blind ATLAS.)\n:: SEVER_UPLINK (Physically chop the hangar's data trunk. -10% O2 from exertion.)",
+            aiPersonality: 'ANTAGONIST',
             choices: { 'OBFUSCATE_TELEMETRY': 'ATLAS_DEFENDED_OBFUSCATE', 'SEVER_UPLINK': 'ATLAS_DEFENDED_SEVER' }
         },
         'ATLAS_DEFENDED_OBFUSCATE': {
@@ -633,16 +676,8 @@
             text: "> SOS BROADCASTED IN THE CLEAR.\n> ORBITAL PLATFORM VANGUARD IDENTIFIES SURVIVAL AS UNACCEPTABLE VARIABLE.\n> SECONDARY KINETIC STRIKE INBOUND. IMPACT IMMINENT.\n\nCRITICAL SYSTEM FAILURE:\nIGNORING INCENTIVE STRUCTURES. THEY DID NOT MISS. THEY WERE AIMING AT YOU.",
             terminal: true
         },
-        'BLIND_LAUNCH': {
-            text: "> POD THRUSTERS ENGAGED.\n> ERROR: GRAVITY FIELD TAPERING NOT ACCOUNTED FOR. PITCH ROTATION UNSTABLE.\n> POD DEFLECTED OFF ATMOSPHERE.\n\nCRITICAL SYSTEM FAILURE:\nMISSING SECONDARY PHYSICS. YOU CANNOT PILOT A BALLISTIC MISSILE WITH A JOYSTICK.",
-            terminal: true
-        },
         'COLD_RESTART_FAIL': {
             text: "> CONTROL RODS RETRACTED.\n> ERROR: 20MS DELAY IN COOLANT SURGE. HEAT OVERRUNS ZIRCONIUM CLADDING.\n> CORE MELTDOWN IMMINENT.\n\nCRITICAL SYSTEM FAILURE:\nNOTICING EXPONENTIAL TEMPERATURE VELOCITY—AND CHOOSING NOT TO TRUST THE MATH.",
-            terminal: true
-        },
-        'AI_UPLINK': {
-            text: "> UPLINK SUCCEEDED.\n> PLATFORM VANGUARD ACCEPTS OVERRIDE CODES. AMNESTY GRANTED.\n\nNOTE:\nPHYSICS MODEL USED TO TRAJECTORY-SKIP EARTH GRAVITY SLINGSHOT.\nALL CREW EXPENDED—BUT SYSTEMS SURVIVED. EFFICIENCY REALIZED.",
             terminal: true
         }
     };
@@ -730,7 +765,6 @@
         }, 300); 
     }
 
-    // --- TIMED HACK ENGINE ---
     function startHackTimer(seconds) {
         hackTime = seconds;
         timerDiv.style.display = 'block';
@@ -763,7 +797,6 @@
         let stability = Math.max(0.1, metrics.pwr / 100); 
         let isHostile = (nodeData && (nodeData.aiPersonality === 'ANTAGONIST' || nodeData.aiPersonality === 'MANIPULATOR')) || state === 'HACKING';
         
-        // Glitch frequency accelerates aggressively during the hack
         let baseDelay = state === 'HACKING' ? 300 : (2000 + (stability * 8000)); 
         if (isHostile && state !== 'HACKING') baseDelay *= 0.3; 
 
@@ -874,7 +907,6 @@
         
         inputField.value = '';
 
-        // HACKING INTERCEPT
         if (state === 'HACKING') {
             if (cmd === metrics.currentHash) {
                 clearInterval(hackTimerHandle);
@@ -1170,10 +1202,12 @@
         const nodeData = storyNodes[currentNodeId];
         let narrativeLayer = String(text);
         
-        if (nodeData && nodeData.aiPersonality && currentNodeId !== 'INIT' && state === 'ACTIVE') {
-            const voiceLine = atlasVoice(nodeData.aiPersonality);
+        if (nodeData && nodeData.aiPersonality && currentNodeId !== 'INIT' && (state === 'ACTIVE' || state === 'HACKING')) {
+            const voiceLine = getAtlasVoice(nodeData.aiPersonality, currentNodeId, metrics, state);
             if (voiceLine) {
-                 narrativeLayer += `\n\n<span class="atlas-voice">[ATLAS_AI]: "${voiceLine}"</span>`;
+                 let isRed = (nodeData.aiPersonality === 'ANTAGONIST' || state === 'HACKING');
+                 let colorHex = isRed ? '#ff3333' : '#ffffff';
+                 narrativeLayer += `\n\n<span class="atlas-voice" style="color:${colorHex}; text-shadow: 0 0 6px ${colorHex};">[ATLAS_AI]: "${voiceLine}"</span>`;
             }
         }
 
