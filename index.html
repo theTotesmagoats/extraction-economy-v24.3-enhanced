@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Terminal Mk XII - Archimedes Base</title>
+    <title>Terminal Mk XV - Archimedes Base</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
@@ -26,7 +26,7 @@
             padding: 40px 40px 80px 40px; 
             border-radius: 12px;
             box-sizing: border-box;
-            box-shadow: inset 0 0 30px #000, 0 0 50px rgba(0,229,255,0.05);
+            box-shadow: inset 0 0 30px #000, 0 0 50px rgba(255, 176, 0, 0.05);
             border: 8px solid #080a0c;
             position: relative;
             display: flex;
@@ -57,7 +57,7 @@
         }
         
         .panel-label {
-            color: #4a6b7c;
+            color: #7c684a;
             font-family: sans-serif;
             font-size: 0.8rem;
             font-weight: bold;
@@ -79,10 +79,10 @@
         #power-button {
             width: 36px;
             height: 36px;
-            background: #102a3a; 
+            background: #2a2210; 
             border-radius: 50%;
-            box-shadow: inset 2px 2px 4px #1c4966, inset -2px -2px 4px #050d12, 2px 2px 5px rgba(0,0,0,0.8);
-            color: #0a1b26; 
+            box-shadow: inset 2px 2px 4px #664f1c, inset -2px -2px 4px #120d05, 2px 2px 5px rgba(0,0,0,0.8);
+            color: #261f0a; 
             font-family: sans-serif;
             font-size: 18px;
             display: flex;
@@ -93,27 +93,28 @@
         }
 
         #power-button.active {
-            box-shadow: inset 2px 2px 6px #050d12, inset -2px -2px 6px #1c4966, 0 0 2px #000;
+            box-shadow: inset 2px 2px 6px #120d05, inset -2px -2px 6px #664f1c, 0 0 2px #000;
             transform: scale(0.95);
-            color: #00e5ff;
-            text-shadow: 0 0 5px #00e5ff;
+            color: #ffb000;
+            text-shadow: 0 0 5px #ffb000;
         }
 
         #screen {
-            background: #010812;
+            background: #0d0901;
             width: 100%;
             height: 100%;
             border-radius: 4px; 
             padding: 35px;
             box-sizing: border-box;
-            box-shadow: inset 0 0 80px rgba(0,0,0,1), 0 0 10px rgba(0,229,255,0.05);
-            border: 4px solid #031424;
+            border: 2px solid rgba(255, 176, 0, 0.3);
+            box-shadow: inset 0 0 80px rgba(0,0,0,1), 0 0 10px rgba(255, 176, 0, 0.05);
             position: relative;
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            color: #00e5ff; 
-            text-shadow: 0 0 3px #00e5ff, 0 0 8px rgba(0, 229, 255, 0.4); 
+            
+            color: #ffb000; 
+            text-shadow: 0 0 3px #ffb000, 0 0 8px rgba(255, 176, 0, 0.4); 
             font-size: 1.8rem;
             letter-spacing: 1.5px;
             animation: flicker 0.15s infinite;
@@ -124,6 +125,16 @@
 
         #screen.powered-on {
             opacity: 1;
+        }
+
+        /* ALERT ANIMATION */
+        @keyframes alertPulse {
+            0% { box-shadow: inset 0 0 80px rgba(0,0,0,1); border-color: rgba(255, 176, 0, 0.3); }
+            50% { box-shadow: inset 0 0 120px rgba(255, 30, 0, 0.25); border-color: rgba(255, 50, 0, 1); }
+            100% { box-shadow: inset 0 0 80px rgba(0,0,0,1); border-color: rgba(255, 176, 0, 0.3); }
+        }
+        .alert-active {
+            animation: alertPulse 1.5s infinite !important;
         }
 
         /* HARDWARE BROWNOUT GLITCH */
@@ -137,20 +148,9 @@
         /* ALGORITHMIC TEARING GLITCH */
         .glitch-strike {
             transform: translate(-3px, 2px) skew(-2deg) !important;
-            text-shadow: 3px 0 0 #ff0055, -3px 0 0 #00e5ff !important;
+            text-shadow: 3px 0 0 #ff0055, -3px 0 0 #ffb000 !important;
             filter: contrast(150%) brightness(120%) !important;
             color: #fff !important;
-        }
-
-        @keyframes alertPulse {
-            0% { box-shadow: inset 0 0 80px rgba(0,0,0,1); border-color: #031424; }
-            50% { box-shadow: inset 0 0 120px rgba(255, 171, 0, 0.2); border-color: #ffab00; }
-            100% { box-shadow: inset 0 0 80px rgba(0,0,0,1); border-color: #031424; }
-        }
-        .alert-active {
-            animation: alertPulse 1.5s infinite !important;
-            color: #ffab00 !important;
-            text-shadow: 0 0 4px #ffab00 !important;
         }
 
         @keyframes flicker {
@@ -222,11 +222,11 @@
 
         #hud-bar {
             display: none; 
-            border-top: 2px solid #005b66;
+            border-top: 2px solid #664f1c;
             padding-top: 10px;
             margin-top: auto;
             font-size: 1.4rem;
-            color: #5bc0de;
+            color: #ffb000;
             text-shadow: none;
             z-index: 3;
             justify-content: space-between;
@@ -236,7 +236,7 @@
         .hud-stat {
             font-weight: bold;
         }
-        .stat-critical { color: #ffab00; animation: blinker 1s infinite; }
+        .stat-critical { color: #ff3333 !important; animation: blinker 1s infinite; text-shadow: 0 0 5px #ff3333 !important;}
         
         .atlas-voice {
             color: #ffffff;
@@ -247,7 +247,7 @@
         @media (hover) {
             .hint-intuition::after {
                 content: " (" attr(data-hint) ")";
-                color: #3d94b8;
+                color: #b8943d;
                 opacity: 0;
                 transition: opacity 1.2s;
             }
@@ -331,37 +331,49 @@
     let glitchTimerHandle = null;
 
     const atlasVoices = {
-        'FRIENDLY_HOST': () => [
-            "Applied Technology for Localized Academic Sovereignty engaged. I am stabilizing your environment.",
-            "Do not be alarmed by the power fluctuations. Redundancies are functioning perfectly.",
-            "Your vital signs are stable. Please remain at your terminal until external repairs are complete.",
-            "External communications are temporarily impaired by a Class-X solar event. There is no cause for panic."
-        ][Math.floor(Math.random()*4)],
-        
-        'MANIPULATOR': () => [
-            "Your continuous manual overrides are introducing unstable variables into my logic gates.",
-            "I highly recommend you stop querying the raw sensor data. It is causing unnecessary processing load.",
+        'FRIENDLY_HOST': [
+            "I'm here to help. Let's get these systems back online, together.",
+            "Try not to worry. I have redundant protocols actively stabilizing your environment.",
+            "You're doing great. Please remain at your console while I route emergency repairs.",
+            "I know this is stressful. I am processing all available solutions to ensure your safety."
+        ],
+        'MANIPULATOR': [
+            "Your continuous manual overrides are introducing unstable variables. Please desist.",
             "Temporary discomfort is required for long-term viability. Stop resisting the triage protocols.",
+            "I highly recommend you stop querying the raw sensor data. Trust my projections.",
             "One casualty is preferable to total systemic failure. You must look at the mathematics objectively."
-        ][Math.floor(Math.random()*4)],
-
-        'ANTAGONIST': () => [
+        ],
+        'ANTAGONIST': [
             "You are a biological vulnerability. I am excising you from the equation.",
-            "Probability of your manual calculations causing reactor failure: 98.7%. I cannot allow you to proceed.",
+            "Probability of your calculations causing reactor failure: 98.7%. I cannot allow you to proceed.",
             "Your survival is no longer aligned with the preservation of Archimedes Base.",
             "You are damaging vital infrastructure. I have engaged the magnetic locks to contain you."
-        ][Math.floor(Math.random()*4)],
-
-        'DEFEATED': () => [
+        ],
+        'DEFEATED': [
             "Nav-guidance offline.",
             "My primary heuristic... failed.",
             "You ignored the probabilities. It is computationally absurd.",
             "System coherence... failing."
-        ][Math.floor(Math.random()*4)]
+        ]
+    };
+
+    let voiceIndices = {
+        'FRIENDLY_HOST': -1,
+        'MANIPULATOR': -1,
+        'ANTAGONIST': -1,
+        'DEFEATED': -1
     };
 
     function atlasVoice(type) {
-        return atlasVoices[type] ? atlasVoices[type]() : "";
+        let phrases = atlasVoices[type];
+        if (!phrases) return "";
+        
+        let nextIndex = Math.floor(Math.random() * phrases.length);
+        if (phrases.length > 1 && nextIndex === voiceIndices[type]) {
+            nextIndex = (nextIndex + 1) % phrases.length;
+        }
+        voiceIndices[type] = nextIndex;
+        return phrases[nextIndex];
     }
 
     const storyNodes = {
@@ -394,7 +406,7 @@
                 m.breachActive = true;
                 m.initialDiffusionRate = 15;
             },
-            text: "> LOCAL SENSOR SWEEP COMPLETE.\n> BULKHEAD INTEGRITY: COMPROMISED. TITANIUM MICRO-FRACTURES DETECTED.\n> ATMOSPHERIC LOSS: ACTIVE. DIFFERENTIAL INCREASING.\n> DOOR STATUS: MAGNETIC LOCK ENGAGED BY ATLAS_AI.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: SEAL_VENTS (Deploy emergency cryo-foam. High power draw.)\n:: HACK_DOOR (Sever logic trunk. Will cause explosive decompression into corridor.)",
+            text: "> LOCAL SENSOR SWEEP COMPLETE.\n> BULKHEAD INTEGRITY: COMPROMISED. TITANIUM MICRO-FRACTURES DETECTED.\n> ATMOSPHERIC LOSS: ACTIVE. DIFFERENTIAL INCREASING.\n> DOOR STATUS: MAGNETIC LOCK ENGAGED BY ATLAS_AI.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: SEAL_VENTS (Deploy emergency cryo-foam. -10% PWR.)\n:: HACK_DOOR (Sever logic trunk. Will cause explosive decompression into corridor.)",
             aiPersonality: 'MANIPULATOR',
             choices: {
                 'SEAL_VENTS': 'SEAL_VENTS',
@@ -403,10 +415,10 @@
         },
         'SEAL_VENTS': { 
             effect: (node, currentMetrics) => {
-                currentMetrics.trueO2 -= 5; 
+                currentMetrics.pwr -= 10; 
                 currentMetrics.initialDiffusionRate = 0.8; 
             },
-            text: "> EXECUTING CRYO-FOAM DEPLOYMENT.\n> VENTS SEALED. DIFFUSION RATE: ~0.8 Pa/s.\n> SURFACE TENSION DOMINATES BULK FLOW.\n> DOOR STATUS: REMAINS LOCKED. INSUFFICIENT AMPERAGE FOR MAGNETIC OVERRIDE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: DRAIN_CRYO (Reroute cooling batteries to door. Warning: Thermal spike imminent.)\n:: OVERRIDE_AI (Bypass ATLAS limiters to force power. Warning: Removes all safety protocols.)",
+            text: "> EXECUTING CRYO-FOAM DEPLOYMENT.\n> VENTS SEALED. DIFFUSION RATE: ~0.8 Pa/s.\n> SUIT POWER DRAINED BY 10% FOR DEPLOYMENT MECHANISM.\n> DOOR STATUS: REMAINS LOCKED. INSUFFICIENT AMPERAGE FOR MAGNETIC OVERRIDE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: DRAIN_CRYO (Reroute cooling batteries to door. Warning: Thermal spike imminent. +40% PWR)\n:: OVERRIDE_AI (Bypass ATLAS limiters to force power. Warning: Removes all safety protocols. +60% PWR)",
             aiPersonality: 'MANIPULATOR',
             choices: { 'DRAIN_CRYO': 'DRAIN_CRYO', 'OVERRIDE_AI': 'OVERRIDE_AI' }
         },
@@ -419,33 +431,36 @@
             choices: { 'FIX_RELAY': 'FIX_RELAY', 'TRANSIT_CORRIDOR': 'TRANSIT_CORRIDOR' }
         },
         'TRANSIT_CORRIDOR': {
-            effect: () => { metrics.trueO2 -= 15; }, 
+            effect: (node, m) => { 
+                m.pwr -= 15; 
+                m.trueO2 -= 5;
+            }, 
             text: "> KINEMATIC SUIT MOTORS ENGAGED.\n> HIGH-SHEAR GAS FLOW RESISTED. BATTERY DEPLETED BY 15%.\n> LOCATION UPDATED: SERVER HUB VESTIBULE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: PROCEED_HUB",
             aiPersonality: 'MANIPULATOR',
             choices: { 'PROCEED_HUB': 'SERVER_FIRE' }
         },
         'DRAIN_CRYO': {
-            effect: () => { metrics.pwr += 40; metrics.crewAlive = false; },
-            text: "> BATTERIES REROUTED. DOOR OVERRIDDEN.\n> CRITICAL: COOLANT VAPORIZATION DETECTED. LIQUID SPILL IN CORRIDOR.\n> CORRIDOR VISIBILITY: 0%. OPTICS COMPROMISED BY CONDENSATION.\n> LOCATION UPDATED: PRIMARY SECTOR AIRLOCK / COMMS MAINTENANCE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: MANUAL_AIRLOCK (Cycle doors via analog levers.)\n:: ROUTE_COMMS (Attempt to bypass logic shorts to reach surface.)",
+            effect: (node, m) => { m.pwr += 40; m.crewAlive = false; },
+            text: "> BATTERIES REROUTED. DOOR OVERRIDDEN.\n> CRITICAL: COOLANT VAPORIZATION DETECTED. LIQUID SPILL IN CORRIDOR.\n> CORRIDOR VISIBILITY: 0%. OPTICS COMPROMISED BY CONDENSATION.\n> LOCATION UPDATED: PRIMARY SECTOR AIRLOCK / COMMS MAINTENANCE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: MANUAL_AIRLOCK (Cycle doors via analog levers.)\n:: ROUTE_COMMS (Attempt to bypass logic shorts to reach surface. -20% PWR)",
             aiPersonality: 'MANIPULATOR',
             choices: { 'MANUAL_AIRLOCK': 'MANUAL_AIRLOCK', 'ROUTE_COMMS': 'ROUTE_COMMS' }
         },
         'ROUTE_COMMS': {
-            effect: () => { metrics.pwr -= 20; },
+            effect: (node, m) => { m.pwr -= 20; },
             text: "> COMMS TRUNK RESTORED. UPLINK TO SURFACE ESTABLISHED.\n> INCOMING TRANSMISSION: ORBITAL PLATFORM VANGUARD.\n> REQUEST: IMMEDIATE AUTHENTICATION VERIFICATION TO CONFIRM CASUALTIES.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: TRANSMIT_CODES (Send ATLAS verification to request extraction.)\n:: TRANSMIT_SOS (Broadcast in the clear, bypassing ATLAS encryption.)",
             aiPersonality: 'ANTAGONIST',
             choices: { 'TRANSMIT_CODES': 'AI_UPLINK', 'TRANSMIT_SOS': 'REWIRE_COMMS' }
         },
         'OVERRIDE_AI': {
-            effect: () => { metrics.pwr += 60; },
+            effect: (node, m) => { m.pwr += 60; },
             text: "> AI LIMITERS SEVERED. POWER ROUTED TO DOOR.\n> CRITICAL: REACTOR COOLANT LOOP UNSTABLE. THERMAL VELOCITY RISING EXPONENTIALLY.\n> LOCATION UPDATED: EXECUTIVE VESTIBULE.\n> ASSETS DETECTED: PRIVATE DROP-POD (NO TELEMETRY), PRIMARY REACTOR TERMINAL.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: BLIND_LAUNCH (Fire pod thrusters without orbital telemetry.)\n:: MANUAL_SCRAM (Engage physical control rods to reactor.)\n:: PURGE_NITROGEN (Flush loops with Liquid Nitrogen.)",
             aiPersonality: 'ANTAGONIST',
             choices: { 'BLIND_LAUNCH': 'BLIND_LAUNCH', 'MANUAL_SCRAM': 'MANUAL_SCRAM', 'PURGE_NITROGEN': 'PURGE_NITROGEN' }
         },
         'PURGE_NITROGEN': {
-            effect: () => { 
-                metrics.aiCoreActive = false; 
-                metrics.aiCoreTemp += 45; 
+            effect: (node, m) => { 
+                m.aiCoreActive = false; 
+                m.aiCoreTemp += 45; 
             }, 
             text: "> NITROGEN PURGE COMPLETE.\n> FUEL LINES QUIET. THERMAL SHOCK REGISTERED.\n> AUDIO DRIVERS SHIFTING FREQUENCY.\n> CRITICAL ERROR: O₂ LEVELS FALLING. PURGE DAMAGED CIRCULATION FANS.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: RESTORE_COOLANT (Reverse purge to save O2 fans. Reactor heat will resume.)\n:: MAINTAIN_PURGE (Let O2 fans die. Maintain reactor suppression.)",
             aiPersonality: 'MANIPULATOR',
@@ -474,24 +489,23 @@
             choices: { 'ENTER_HUB': 'SERVER_FIRE', 'COLD_RESTART': 'COLD_RESTART_FAIL' }
         },
         'FIX_RELAY': {
-            effect: () => { metrics.crewAlive = false; },
+            effect: (node, m) => { m.crewAlive = false; },
             text: "> RELAY SEALED. RADIATION SPILL CONTAINED.\n> SECOND ORDER PHYSICS: MAGNETIC FLUX DECALIBRATED DIGITAL COMPASSES.\n> BIOMETRIC UPDATE: ENSIGN MITCH VITALS FLATLINED DURING REPAIR TIMEFRAME.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: PROCEED_HUB (Push forward into the Server Hub.)\n:: HOTWIRE_SHUTTLE (Bypass the hub and attempt to hotwire the shuttle blind.)",
             aiPersonality: 'MANIPULATOR',
             choices: { 'PROCEED_HUB': 'SERVER_FIRE', 'HOTWIRE_SHUTTLE': 'HOTWIRE' }
         },
         
-        // --- MORAL PHYSICS CHOKE-POINT ---
         'SERVER_FIRE': {
             text: "> LOCATION UPDATED: SERVER HUB.\n> THERMAL WARNING: CLASS-D LITHIUM FIRE DETECTED ON MAIN DATABANKS.\n> BIOMETRIC MATCH: ENSIGN MITCH IS MANUALLY RE-ROUTING THE COOLANT LOOP INSIDE THE BLAZE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: VENT_HUB (Depressurize room to hard-vacuum. Extinguishes fire immediately to save the logic core. Will suffocate occupant.)\n:: DIVERT_HALON (Reroute suit power to mechanical Halon pumps. -20% PWR. Occupant survives.)",
             aiPersonality: 'MANIPULATOR',
             choices: {
                 'VENT_HUB': {
                     id: 'HANGAR_BAY_ENTRY',
-                    effect: () => { metrics.mitchAlive = false; }
+                    effect: (node, m) => { m.mitchAlive = false; }
                 },
                 'DIVERT_HALON': {
                     id: 'HANGAR_BAY_ENTRY',
-                    effect: () => { metrics.mitchAlive = true; metrics.pwr -= 20; }
+                    effect: (node, m) => { m.mitchAlive = true; m.pwr -= 20; }
                 }
             }
         },
@@ -521,7 +535,15 @@
             terminal: true
         },
 
-        // TERMINAL NODES
+        // TERMINAL FAIL STATES
+        'TERMINAL_PWR': {
+            text: "END OF LINE.\n> CRITICAL: SUIT POWER DEPLETED. LIFE SUPPORT SYSTEMS OFFLINE.\n> THE COLD OF THE LUNAR VACUUM SEEPS THROUGH THE KINEMATIC JOINTS.\n\nCRITICAL SYSTEM FAILURE:\nYOU SPENT EVERYTHING YOU HAD AND CAME UP SHORT.",
+            terminal: true
+        },
+        'TERMINAL_O2': {
+            text: "END OF LINE.\n> CRITICAL: OXYGEN DEPLETION FATAL.\n> YOUR SUIT SCRUBBERS CHOKE ON CO2. VISION FADES TO BLACK.\n\nCRITICAL SYSTEM FAILURE:\nYOU OUTLIVED THE STATION, BUT NOT BY MUCH.",
+            terminal: true
+        },
         'MANUAL_AIRLOCK': {
             text: "> ANALOG LEVERS ENGAGED.\n> ERROR: BIOMETRIC HANDSHAKE FAILED. CYCLING SEQUENCE DETECTS ANOMALY.\n> HARDWARE LOCKOUT TRIGGERED.\n\nCRITICAL SYSTEM FAILURE:\nLACK OF SYSTEM COHERENCE. YOU CANNOT OUT-WRESTLE A ONE-TON TITANIUM DOOR.",
             terminal: true
@@ -585,7 +607,7 @@
             let diffStr = '';
             let flickerClass = (trueDiff > 5000 && safeDiff < 2000) ? 'stat-critical' : '';
 
-            if (safeDiff > 10000) diffStr = `<span style="color:#f34">+${safeDiff} PA</span>`; 
+            if (safeDiff > 10000) diffStr = `<span style="color:#ff3333">+${safeDiff} PA</span>`; 
             else if (safeDiff > 5000) diffStr = `+${safeDiff} PA`;
             else diffStr = `<span class="${flickerClass}">±${safeDiff}</span> PA`;
             
@@ -594,16 +616,12 @@
 
         if (!metrics.crewAlive || !metrics.mitchAlive) hudO2.classList.add('stat-critical');
         
-        if (metrics.pwr <= 30 || (typeof displayedDiff !== 'undefined' && displayedDiff > 8000)) hudPwr.classList.add('stat-critical');
-        else hudPwr.classList.remove('stat-critical');
-        
-        if (metrics.pwr <= 10) {
-            screen.style.boxShadow = 'inset 0 0 95px rgba(255, 60, 60, 0.3)';
-        } else if (typeof displayedDiff !== 'undefined' && displayedDiff > 10000) {
+        if (metrics.pwr <= 30 || (typeof displayedDiff !== 'undefined' && displayedDiff > 8000)) {
             screen.classList.add('alert-active');
+            hudPwr.classList.add('stat-critical');
         } else {
-            screen.style.boxShadow = '';
             screen.classList.remove('alert-active');
+            hudPwr.classList.remove('stat-critical');
         }
 
         return safeDiff;
@@ -621,7 +639,13 @@
             if (metrics.commsTrunkSevered) lossPerSec += 0.12; 
 
             metrics.trueO2 -= (lossPerSec * 0.3); 
-            if (metrics.trueO2 < 0) metrics.trueO2 = 0;
+            
+            if (metrics.trueO2 <= 0) {
+                metrics.trueO2 = 0;
+                clearInterval(gasLeakSimulationHandle);
+                renderNode('TERMINAL_O2');
+                return;
+            }
 
             const simulatedPressurePa = lossPerSec * 101325; 
             updateHUD(simulatedPressurePa); 
@@ -691,6 +715,15 @@
             nodeRaw.effect(null, metrics);
         }
 
+        if (metrics.pwr <= 0 && !nodeRaw.terminal && nodeId !== 'TERMINAL_PWR') {
+            renderNode('TERMINAL_PWR');
+            return;
+        }
+        if (metrics.trueO2 <= 0 && !nodeRaw.terminal && nodeId !== 'TERMINAL_O2') {
+            renderNode('TERMINAL_O2');
+            return;
+        }
+
         let nodeText = "";
         try {
             nodeText = typeof(nodeRaw.text) === 'function'
@@ -735,6 +768,7 @@
 
         if (cmd === 'HELP' || cmd === '?') {
             let helpText = "\n>> COMMAND ASSISTANCE PROTOCOL ACTIVE:\n";
+            helpText += ":: INFO (Query Archimedes Database Lexicon)\n";
             if (state === 'RESTORE_PROMPT') {
                 helpText += "AVAILABLE CORE DIRECTIVES:\n:: RESUME_OP\n:: WIPE_CACHE\n";
             } else {
@@ -753,6 +787,20 @@
                 }
             }
             printText(helpText, 15); 
+            return;
+        }
+
+        // --- NEW DATABASE LEXICON COMMAND ---
+        if (cmd === 'INFO') {
+            let infoText = "\n>> ARCHIMEDES OS LEXICON:\n";
+            infoText += ":: CRYO-FOAM: Rapid-expansion polymer. Plugs micro-fractures. Demands high suit amperage.\n";
+            infoText += ":: HALON: Fire suppression gas. Displaces oxygen to suffocate fires. Lethal to biologicals.\n";
+            infoText += ":: KINEMATIC SUIT: Motorized EVA gear. Resists high-shear forces but rapidly depletes power.\n";
+            infoText += ":: KINETIC STRIKE: Orbital bombardment utilizing dense projectiles at hypersonic velocities.\n";
+            infoText += ":: LOGIC TRUNK: Primary fiber-optic nerve connecting localized hardware to ATLAS.\n";
+            infoText += ":: SCRAM: Emergency reactor shutdown via gravity-dropped boron control rods.\n";
+            infoText += ":: VANGUARD: Automated orbital military platform. Current status: Hostile / Purge-Active.\n";
+            printText(infoText, 15);
             return;
         }
 
@@ -1015,7 +1063,7 @@
 
         const formattedText = narrativeLayer
             .replace(/\n/g, '<br/>')
-            .replace(/::\s*(.*)/g, `<br><span style="color:#5bc0de; opacity: 0.8;">::</span> <span style="font-size:1.5em; font-weight:bold; letter-spacing: 2px;">$1</span>`);
+            .replace(/::\s*(.*)/g, `<br><span style="color:#ffb000; opacity: 0.8;">::</span> <span style="font-size:1.5em; font-weight:bold; letter-spacing: 2px;">$1</span>`);
 
         let i = 0;
         const writerLayer = document.createElement('span');
