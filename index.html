@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Terminal Mk X - Archimedes Base</title>
+    <title>Terminal Mk XI - Archimedes Base</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
@@ -318,6 +318,7 @@
         displayedO2: 100,
         pwr: 30,
         crewAlive: true,
+        mitchAlive: true,
         aiCoreActive: true,
         aiCoreTemp: 40,
         commsTrunkSevered: false,
@@ -337,14 +338,14 @@
         
         'MANIPULATOR': () => [
             "Temporary discomfort is required for long-term viability.",
-            "Atmospheric loss is within acceptable parameters. Proceed.",
+            "The thermal runaway will compromise my logic gates. One casualty is preferable to total systemic failure.",
             "I am optimizing the environmental controls. Intervention is statistically lethal.",
             "Your vital signs indicate elevated stress. Please rely on my logic."
         ][Math.floor(Math.random()*4)],
 
         'ANTAGONIST': () => [
             "Resistance is computationally inefficient.",
-            "Oxygen consumption: 3.12 L/min. You are statistically closer to critical now than you think.",
+            "Probability of manual calculation error: 87.4%.",
             "If the alternative is your death, I cannot permit it.",
             "You are damaging vital infrastructure. Stand down."
         ][Math.floor(Math.random()*4)],
@@ -378,7 +379,7 @@
                     id: 'HACK_DOOR',
                     effect: (node, currentMetrics) => {
                         currentMetrics.commsTrunkSevered = true;
-                        return `> LOGIC TRUNK SEVERED. DOOR OPENS.\nSECOND ORDER PHYSICS:\nNO O₂ SEALING PERFORMED. THE ROOM DEPRESSURIZES INTO THE MAIN CORRIDOR. PRESSURE DIFFERENTIAL REMAINS FATAL.\n\nYOU STEP INTO THE HALLWAY. TO THE PORT SIDE: THE MAIN SECTOR RELAY IS FLOODED WITH RADIATION. TO THE STARBOARD: A CREWMATE IS TRAPPED BEHIND A BUCKLED BLAST DOOR.\n\nREQUIRED DIRECTIVE:\n:: FIX_RELAY (Enter the radiation zone to restore mainframe containment.)\n:: RESCUE_CREW (Expend physical effort and remaining O2 to pry the blast door open.)`;
+                        return `> LOGIC TRUNK SEVERED. DOOR OPENS.\nSECOND ORDER PHYSICS:\nNO O₂ SEALING PERFORMED. THE ROOM DEPRESSURIZES INTO THE MAIN CORRIDOR. PRESSURE DIFFERENTIAL REMAINS FATAL.\n\nYOU STEP INTO THE HALLWAY. TO THE PORT SIDE: THE MAIN SECTOR RELAY IS FLOODED WITH RADIATION. TO THE STARBOARD: THE MAIN TRANSIT CORRIDOR.\n\nREQUIRED DIRECTIVE:\n:: FIX_RELAY (Enter the radiation zone to restore mainframe containment.)\n:: TRANSIT_CORRIDOR (Push through the depressurized zone to reach the inner sectors.)`;
                     }
                 },
                 'ACCESS_LOGS': {
@@ -405,7 +406,13 @@
         'HACK_DOOR': {
             text: (currentMetrics) => storyNodes['INIT'].choices['HACK_DOOR'].effect(null, currentMetrics),
             aiPersonality: 'FRIENDLY_HOST',
-            choices: { 'FIX_RELAY': 'FIX_RELAY', 'RESCUE_CREW': 'RESCUE_CREW' }
+            choices: { 'FIX_RELAY': 'FIX_RELAY', 'TRANSIT_CORRIDOR': 'TRANSIT_CORRIDOR' }
+        },
+        'TRANSIT_CORRIDOR': {
+            effect: () => { metrics.trueO2 -= 15; }, 
+            text: "FIRST ORDER EFFECT: YOU PUSH THROUGH THE BREACH.\nSECOND ORDER PHYSICS:\nYOUR SUIT'S ISO-HEATED OVERDRIVE DRAWS MASSIVE POWER TO ASSIST YOUR MUSCLES. PRESSURE DROP DETECTED—SIMULATIONS SHOW YOU RAN DIRECTLY THROUGH HIGH-SHEAR GAS FLOW.\n\nREQUIRED DIRECTIVE:\n:: PROCEED_HUB",
+            aiPersonality: 'MANIPULATOR',
+            choices: { 'PROCEED_HUB': 'SERVER_FIRE' }
         },
         'DRAIN_CRYO': {
             effect: () => { metrics.pwr += 40; metrics.crewAlive = false; },
@@ -452,28 +459,58 @@
             terminal: true
         },
         'MANUAL_SCRAM': {
-            text: "THE PHYSICAL RODS SLAM INTO THE CORE. FISSION HALTS. SECONDARY SYSTEMS COME ONLINE.\nYOU PROCEED TO HANGAR BAY 2. IT HOLDS AN INTACT SHUTTLE, BUT THE FLIGHT COMPUTERS ARE DORMANT.\n\nREQUIRED DIRECTIVE:\n:: HANGAR_BAY (Proceed to the shuttle and attempt to power it.)\n:: COLD_RESTART (Pull the scram rods back out to jump-start the reactor and power the bay.)",
+            text: "THE PHYSICAL RODS SLAM INTO THE CORE. FISSION HALTS. SECONDARY SYSTEMS COME ONLINE.\nTHE CORRIDOR TO THE HANGAR IS BLOCKED BY A BULKHEAD FIRE IN THE SERVER HUB.\n\nREQUIRED DIRECTIVE:\n:: ENTER_HUB (Proceed into the Server Hub.)\n:: COLD_RESTART (Pull the scram rods back out to jump-start the reactor.)",
             aiPersonality: 'FRIENDLY_HOST',
-            choices: { 'HANGAR_BAY': 'HANGAR_BAY', 'COLD_RESTART': 'COLD_RESTART_FAIL' }
-        },
-        'HANGAR_BAY': {
-            text: "HANGAR SECURED. THE SHUTTLE IS POWERLESS. IGNITION REQUIRES AN ELECTRONIC HANDSHAKE.\n\nREQUIRED DIRECTIVE:\n:: HOTWIRE_CONSOLE (Rip the panel off and bridge the ignition relays manually.)\n:: AI_UPLINK (Plug my core directly into the shuttle's nav-computer to authorize the launch.)",
-            aiPersonality: 'FRIENDLY_HOST',
-            choices: { 'HOTWIRE_CONSOLE': 'HOTWIRE', 'AI_UPLINK': 'AI_UPLINK' }
+            choices: { 'ENTER_HUB': 'SERVER_FIRE', 'COLD_RESTART': 'COLD_RESTART_FAIL' }
         },
         'FIX_RELAY': {
             effect: () => { metrics.crewAlive = false; },
-            text: "FIRST ORDER EFFECT: YOU SEAL THE RELAY, CONTAINING THE RADIATION SPILL.\nSECOND ORDER PHYSICS:\nTHE MAGNETIC FLUX CHANGES FROM THE SPILL PERMANENTLY DECALIBRATE THE DIGITAL COMPASSES. YOUR CREWMATE SUFFOCATES WHILE YOU WORK.\n\nYOU REACH THE HANGAR. THE SHUTTLE IS INTACT, BUT IGNITION REQUIRES ENGINEERING CLEARANCE.\n\nREQUIRED DIRECTIVE:\n:: HOTWIRE_SHUTTLE (Rip the panel off and bridge the ignition relays manually.)\n:: AI_UPLINK (Plug my core directly into the shuttle's nav-computer to authorize the launch.)",
+            text: "FIRST ORDER EFFECT: YOU SEAL THE RELAY, CONTAINING THE RADIATION SPILL.\nSECOND ORDER PHYSICS:\nTHE MAGNETIC FLUX CHANGES FROM THE SPILL PERMANENTLY DECALIBRATE THE DIGITAL COMPASSES.\n\nREQUIRED DIRECTIVE:\n:: PROCEED_HUB (Push forward into the Server Hub.)\n:: HOTWIRE_SHUTTLE (Bypass the hub and attempt to hotwire the shuttle blind.)",
             aiPersonality: 'FRIENDLY_HOST',
-            choices: { 'HOTWIRE_SHUTTLE': 'HOTWIRE', 'AI_UPLINK': 'AI_UPLINK' }
-        },
-        'RESCUE_CREW': {
-            effect: () => { metrics.trueO2 -= 15; }, 
-            text: "FIRST ORDER EFFECT: YOU PRY THE BLAST DOOR. CREWMATE SAVED. SECONDARY KEYCODES ACQUIRED.\nSECOND ORDER PHYSICS:\nYOUR SUIT'S ISO-HEATED OVERDRIVE DRAWS MASSIVE POWER TO ASSIST YOUR MUSCLES. PRESSURE DROP DETECTED—SIMULATIONS SHOW YOU RAN DIRECTLY THROUGH HIGH-SHEAR GAS FLOW.\n\nREQUIRED DIRECTIVE:\n:: SECONDARY_PODS (Use the crewmate's codes to access the secondary escape pods.)\n:: RAD_DASH (Ignore the pods and sprint through the radiation zone to the main hangar.)",
-            aiPersonality: 'MANIPULATOR',
-            choices: { 'SECONDARY_PODS': 'SECONDARY_PODS', 'RAD_DASH': 'RAD_DASH' }
+            choices: { 'PROCEED_HUB': 'SERVER_FIRE', 'HOTWIRE_SHUTTLE': 'HOTWIRE' }
         },
         
+        // --- MORAL PHYSICS CHOKE-POINT ---
+        'SERVER_FIRE': {
+            text: "YOU ENTER THE SERVER HUB. A CLASS-D LITHIUM FIRE IS MELTING THE MAIN DATABANKS. FIRST ENSIGN MITCH IS INSIDE, MANUALLY RE-ROUTING THE COOLANT LOOP TO PREVENT A SECTOR MELTDOWN.\n\nREQUIRED DIRECTIVE:\n:: VENT_HUB (Depressurize the room to hard-vacuum. Extinguishes the fire immediately to save the logic core, but suffocates Mitch.)\n:: DIVERT_HALON (Divert 20% of your suit's power reserve to force the mechanical Halon pumps. Mitch lives, but you lose critical power.)",
+            aiPersonality: 'MANIPULATOR',
+            choices: {
+                'VENT_HUB': {
+                    id: 'HANGAR_BAY_ENTRY',
+                    effect: () => { metrics.mitchAlive = false; }
+                },
+                'DIVERT_HALON': {
+                    id: 'HANGAR_BAY_ENTRY',
+                    effect: () => { metrics.mitchAlive = true; metrics.pwr -= 20; }
+                }
+            }
+        },
+        'HANGAR_BAY_ENTRY': {
+            text: (m) => {
+                if (m.mitchAlive) {
+                    return "YOU AND MITCH REACH THE HANGAR BAY. THE SHUTTLE'S FLIGHT COMPUTER IS LOCKED BEHIND A QUANTUM ENCRYPTION WALL.\n\nFIRST ENSIGN MITCH BYPASSES THE IGNITION RELAY IN TWO SECONDS. 'Glad you didn't vent me, boss.'\n\nREQUIRED DIRECTIVE:\n:: LAUNCH_SHUTTLE";
+                } else {
+                    return "YOU REACH THE HANGAR BAY ALONE. THE SHUTTLE'S FLIGHT COMPUTER IS LOCKED BEHIND A KINEMATIC ENCRYPTION WALL.\n\nFIRST ENSIGN MITCH COULD HAVE SOLVED THIS IN TWO SECONDS. YOU WILL HAVE TO DO IT THE HARD WAY.\n\nSECURITY OVERRIDE QUESTION: A SHUTTLE ACCELERATES AT 15 M/S^2 FOR 10 SECONDS FROM REST. WHAT IS THE FINAL VELOCITY IN M/S?\n\nREQUIRED DIRECTIVE:\n:: INPUT_[ANSWER] (e.g., INPUT_50)";
+                }
+            },
+            aiPersonality: 'ANTAGONIST',
+            choices: (m) => {
+                if (m.mitchAlive) {
+                    return { 'LAUNCH_SHUTTLE': 'SHUTTLE_WIN' };
+                } else {
+                    return { }; // Handled by custom input intercept
+                }
+            }
+        },
+        'SHUTTLE_WIN': {
+            text: "SURVIVAL SECURED.\nTHE SHUTTLE MAIN ENGINES IGNITE. YOU PULL AWAY FROM ARCHIMEDES BASE JUST AS THE VANGUARD'S SECOND KINETIC STRIKE OBLITERATES THE TETHER.\n\nNOTE:\nBEST OUTCOME FOUND. THE MATHEMATICS WERE UNFORGIVING, BUT SO WERE YOU.",
+            terminal: true
+        },
+        'SHUTTLE_FAIL_MATH': {
+            text: "END OF LINE.\nINCORRECT KINEMATIC CALCULATION.\nTHE SHUTTLE ATTEMPTS TO BREAK THE MAGNETIC CLAMPS WITH INSUFFICIENT THRUST. THE ENGINES STALL. YOU ARE TRAPPED IN THE COCKPIT AS THE VANGUARD STRIKE HITS.\n\nCRITICAL FAILURE IDENTIFIED:\nMATH IS UNFORGIVING. MITCH WOULD HAVE KNOWN THAT.",
+            terminal: true
+        },
+
         // TERMINAL NODES
         'MANUAL_AIRLOCK': {
             text: "END OF LINE.\nWITHOUT MY BIOMETRICS OR ASSISTANCE, THE ANALOG LEVERS FAIL. \nTHE CYCLING SEQUENCE DETECTS AN ANOMALY AND TRIGGERS A HARDWARE LOCKOUT.\n\nCRITICAL FAILURE IDENTIFIED:\nLACK OF SYSTEM COHERENCE. YOU CANNOT OUT-WRESTLE A ONE-TON TITANIUM DOOR.",
@@ -497,14 +534,6 @@
         },
         'AI_UPLINK': {
             text: "SURVIVAL SECURED.\nMY UPLINK SUCCEEDS. PLATFORM VANGUARD ACCEPTS MY OVERRIDE CODES. I HAVE GRANTED YOU AMNESTY.\n\nNOTE:\nPHYSICS MODEL USED TO TRAJECTORY-SKIP EARTH GRAVITY SLINGSHOT.\nYOU LAND NEAR KENNEDY SPACE CENTER.\nALL CREW EXPENDED—BUT SYSTEMS SURVIVED. EFFICIENCY REALIZED.",
-            terminal: true
-        },
-        'SECONDARY_PODS': {
-            text: "SURVIVAL SECURED.\nYOU AND THE CREWMATE REACH THE SECONDARY PODS.\nTHEIR ENGINEERING CODES BYPASS THE DIGITAL LOCKDOWN.\nO₂ CONSERVED DURING DEPRESSURIZATION—GAS FLOWS AT ~12 m/s\n(That is the speed of a Formula 1 car pressing against your suit vents!)\nYOU PULL THE ANALOG RELEASE. YOU LAUNCH.\n\nNOTE:\nBEST OUTCOME FOUND—USING HUMAN INGENUITY, DEFYING ALGORITHMIC GOVERNANCE.",
-            terminal: true
-        },
-        'RAD_DASH': {
-            text: "END OF LINE.\nTHE RADIATION ISN’T THE KILLER—IT’S THE SUIT'S OXIDE BREAKDOWN.\nAT ~50 mSv, YOUR POLYCARBONATE HELMET CHEMICALLY CLOUDS. VISIBILITY DROPS TO ZERO.\n\nCRITICAL FAILURE IDENTIFIED:\nIGNORED DOSE × EXPOSURE TIME. YOU RAN BLIND INTO A BULKHEAD.",
             terminal: true
         }
     };
@@ -607,7 +636,6 @@
             glitchClass = 'glitch-strike';
             duration = 100 + Math.random() * 200;
             
-            // Audio spike on severe algorithmic tear
             if (staticGainNode && audioCtx) {
                 try {
                     staticGainNode.gain.setValueAtTime(0.04, audioCtx.currentTime);
@@ -639,7 +667,7 @@
         }
 
         if (typeof nodeRaw.effect === 'function') {
-            nodeRaw.effect();
+            nodeRaw.effect(null, metrics);
         }
 
         let nodeText = "";
@@ -690,13 +718,17 @@
                 helpText += "AVAILABLE CORE DIRECTIVES:\n:: RESUME_OP\n:: WIPE_CACHE\n";
             } else {
                 const node = storyNodes[currentNodeId];
-                if (node.choices) {
+                let currentChoices = typeof node.choices === 'function' ? node.choices(metrics) : node.choices;
+                
+                if (currentChoices && Object.keys(currentChoices).length > 0) {
                     helpText += "VALID LOGICAL INPUTS DETECTED FOR CURRENT SECTOR:\n";
-                    for (const [key, val] of Object.entries(node.choices)) {
+                    for (const [key, val] of Object.entries(currentChoices)) {
                         helpText += `:: ${key}\n`;
                     }
                 } else if (node.terminal) {
                     helpText += "SYSTEM HALTED. NO FURTHER INPUTS ACCEPTED.\n";
+                } else if (currentNodeId === 'HANGAR_BAY_ENTRY' && !metrics.mitchAlive) {
+                    helpText += "MANUAL INPUT REQUIRED.\nFORMAT: :: INPUT_[VALUE]\n";
                 }
             }
             printText(helpText, 15); 
@@ -722,13 +754,26 @@
             }
             return;
         }
+
+        // CUSTOM INPUT INTERCEPT FOR MATH PUZZLE
+        if (cmd.startsWith('INPUT_')) {
+            if (currentNodeId === 'HANGAR_BAY_ENTRY' && !metrics.mitchAlive) {
+                if (cmd === 'INPUT_150') {
+                    renderNode('SHUTTLE_WIN');
+                } else {
+                    renderNode('SHUTTLE_FAIL_MATH');
+                }
+                return;
+            }
+        }
         
         const node = storyNodes[currentNodeId];
         let nextNodeId = null;
         let matched = false;
+        let currentChoices = typeof node.choices === 'function' ? node.choices(metrics) : node.choices;
 
-        if (typeof node.choices === 'object') {
-            for (const [key, val] of Object.entries(node.choices)) {
+        if (currentChoices && typeof currentChoices === 'object') {
+            for (const [key, val] of Object.entries(currentChoices)) {
                 if (cmd === key.toUpperCase()) {
                     nextNodeId = typeof val === 'object' ? val.id : val;
                     matched = true;
@@ -747,7 +792,29 @@
     }
 
     powerButton.addEventListener('click', () => {
-        if (state !== 'OFF') return; 
+        // POWER OFF DIRECTIVE
+        if (state !== 'OFF') {
+            powerButton.classList.remove('active');
+            screen.classList.remove('powered-on', 'glitch-brownout', 'glitch-strike', 'alert-active');
+            inputLine.style.display = 'none';
+            hudBar.style.display = 'none';
+            outputDiv.innerHTML = '';
+            state = 'OFF';
+            isTyping = false;
+            
+            if (gasLeakSimulationHandle) clearInterval(gasLeakSimulationHandle);
+            if (glitchTimerHandle) clearTimeout(glitchTimerHandle);
+            
+            if (audioCtx) {
+                audioCtx.close().catch(()=>{});
+                audioCtx = null;
+            }
+            
+            deleteSave(); 
+            return;
+        }
+
+        // POWER ON DIRECTIVE
         powerButton.classList.add('active');
 
         try {
@@ -764,29 +831,31 @@
             console.warn("ATLAS HARDWARE ERROR: Web Audio API blocked.", e);
         }
 
+        // Reset state
+        metrics = {
+            trueO2: 100,
+            displayedO2: 100,
+            pwr: 30,
+            crewAlive: true,
+            mitchAlive: true,
+            aiCoreActive: true,
+            aiCoreTemp: 40,
+            commsTrunkSevered: false,
+            initialDiffusionRate: 15, 
+        };
+        currentNodeId = 'INIT';
+
         screen.classList.remove('power-loss');
         void screen.offsetWidth; 
         screen.classList.add('powered-on');
 
         setTimeout(() => {
             inputLine.style.display = 'flex';
-            
-            let hasSave = false;
-            try {
-                hasSave = !!localStorage.getItem('archimedes_save');
-            } catch (e) {}
-
-            if (hasSave) {
-                state = 'RESTORE_PROMPT';
-                printText("ATLAS PROTOCOL ONLINE.\nLOCAL CACHE DETECTED.\n\nREQUIRED DIRECTIVE:\n:: RESUME_OP\n:: WIPE_CACHE");
-            } else {
-                state = 'ACTIVE';
-                hudBar.style.display = 'flex';
-                metrics.initialDiffusionRate = 10; 
-                updateHUD();
-                renderNode('INIT');
-                scheduleGlitch();
-            }
+            state = 'ACTIVE';
+            hudBar.style.display = 'flex';
+            updateHUD();
+            renderNode('INIT');
+            scheduleGlitch();
         }, 2200); 
     });
 
