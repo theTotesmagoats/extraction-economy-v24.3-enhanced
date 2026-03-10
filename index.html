@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Terminal Mk XVII - Archimedes Base</title>
+    <title>Terminal Mk XVIII - Archimedes Base</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
@@ -127,6 +127,19 @@
             opacity: 1;
         }
 
+        #hack-timer {
+            display: none;
+            position: absolute;
+            top: 25px;
+            right: 40px;
+            font-size: 2.5rem;
+            color: #ff3333;
+            font-weight: bold;
+            text-shadow: 0 0 10px #ff3333, 0 0 20px #ff0000;
+            z-index: 100;
+            letter-spacing: 3px;
+        }
+
         /* ALERT ANIMATION */
         @keyframes alertPulse {
             0% { box-shadow: inset 0 0 80px rgba(0,0,0,1); border-color: rgba(255, 176, 0, 0.3); }
@@ -147,9 +160,9 @@
 
         /* ALGORITHMIC TEARING GLITCH */
         .glitch-strike {
-            transform: translate(-3px, 2px) skew(-2deg) !important;
-            text-shadow: 3px 0 0 #ff0055, -3px 0 0 #ffb000 !important;
-            filter: contrast(150%) brightness(120%) !important;
+            transform: translate(-4px, 3px) skew(-3deg) !important;
+            text-shadow: 4px 0 0 #ff0055, -4px 0 0 #ffb000 !important;
+            filter: contrast(160%) brightness(130%) !important;
             color: #fff !important;
         }
 
@@ -242,6 +255,9 @@
             color: #ffffff;
             font-style: italic;
             text-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
+            display: block;
+            margin-top: 10px;
+            margin-bottom: 10px;
         }
 
         @media (hover) {
@@ -269,6 +285,7 @@
     <div class="rivet r-br"></div>
     
     <div id="screen">
+        <div id="hack-timer">15.0s</div>
         <div id="output"></div>
         <div id="input-line">
             <span id="prompt">ATLAS_SYS></span>
@@ -301,6 +318,7 @@
     const hudBar = document.getElementById('hud-bar');
     const screen = document.getElementById('screen');
     const powerButton = document.getElementById('power-button');
+    const timerDiv = document.getElementById('hack-timer');
 
     const hudO2 = document.getElementById('hud-o2');
     const hudPwr = document.getElementById('hud-pwr');
@@ -324,11 +342,14 @@
         aiCoreTemp: 40,
         commsTrunkSevered: false,
         initialDiffusionRate: 0, 
-        breachActive: false
+        breachActive: false,
+        currentHash: ""
     };
 
     let currentNodeId = 'INIT';
     let glitchTimerHandle = null;
+    let hackTimerHandle = null;
+    let hackTime = 0;
 
     const atlasVoices = {
         'FRIENDLY_HOST': [
@@ -357,17 +378,11 @@
         ]
     };
 
-    let voiceIndices = {
-        'FRIENDLY_HOST': -1,
-        'MANIPULATOR': -1,
-        'ANTAGONIST': -1,
-        'DEFEATED': -1
-    };
+    let voiceIndices = { 'FRIENDLY_HOST': -1, 'MANIPULATOR': -1, 'ANTAGONIST': -1, 'DEFEATED': -1 };
 
     function atlasVoice(type) {
         let phrases = atlasVoices[type];
         if (!phrases) return "";
-        
         let nextIndex = Math.floor(Math.random() * phrases.length);
         if (phrases.length > 1 && nextIndex === voiceIndices[type]) {
             nextIndex = (nextIndex + 1) % phrases.length;
@@ -379,27 +394,17 @@
     const storyNodes = {
         'INIT': {
             text: "ARCHIMEDES OS v9.4.1 [SAFE MODE]\n> CRITICAL: SECTOR 4 TELEMETRY LOSS\n> CRITICAL: EXTERNAL PRESSURE DROPPING\n> WARN: OVERSEER QUARTERS LOCKED (PROTOCOL 8)\n\nSYSTEM AWAITING INVESTIGATIVE DIRECTIVE:\n:: RUN_DIAGNOSTICS (Scan local environmental conditions)\n:: PING_NETWORK (Scan base-wide biometric data)\n:: QUERY_COMMS (Attempt external data-link connection)",
-            choices: {
-                'RUN_DIAGNOSTICS': 'RUN_DIAGNOSTICS',
-                'PING_NETWORK': 'PING_NETWORK',
-                'QUERY_COMMS': 'QUERY_COMMS'
-            }
+            choices: { 'RUN_DIAGNOSTICS': 'RUN_DIAGNOSTICS', 'PING_NETWORK': 'PING_NETWORK', 'QUERY_COMMS': 'QUERY_COMMS' }
         },
         'PING_NETWORK': {
             text: "> ROUTING BIOMETRIC PACKETS...\n> SECTOR 1: NULL RESPONSE\n> SECTOR 2: NULL RESPONSE\n> SECTOR 3 (SERVER HUB): 1 VITAL SIGN DETECTED [ID: ENSIGN MITCHELL. STATUS: ELEVATED HEART RATE]\n> SECTOR 4: CASCADING HARDWARE FAILURE. DATA LOSS 100%.\n\nSYSTEM AWAITING INVESTIGATIVE DIRECTIVE:\n:: RUN_DIAGNOSTICS\n:: QUERY_COMMS",
             aiPersonality: 'FRIENDLY_HOST',
-            choices: {
-                'RUN_DIAGNOSTICS': 'RUN_DIAGNOSTICS',
-                'QUERY_COMMS': 'QUERY_COMMS'
-            }
+            choices: { 'RUN_DIAGNOSTICS': 'RUN_DIAGNOSTICS', 'QUERY_COMMS': 'QUERY_COMMS' }
         },
         'QUERY_COMMS': {
             text: "> QUERYING PRIMARY COMMS TRUNK...\n> ERROR: TRUNK SEVERED AT BULKHEAD.\n> ATTEMPTING MILITARY BACKUP FREQUENCY...\n> HANDSHAKE ACCEPTED: VANGUARD ORBITAL PLATFORM.\n> DECRYPTING CACHE...\n> LOG ENTRY INTERCEPT: [DATA CORRUPTED] ...MASSIVE ORBITAL DEBRIS FIELD DETECTED... ALL EXTERNAL COMM LINES SEVERED TO CONTAIN PROTOCOL [REDACTED].\n\nSYSTEM AWAITING INVESTIGATIVE DIRECTIVE:\n:: RUN_DIAGNOSTICS\n:: PING_NETWORK",
             aiPersonality: 'FRIENDLY_HOST',
-            choices: {
-                'RUN_DIAGNOSTICS': 'RUN_DIAGNOSTICS',
-                'PING_NETWORK': 'PING_NETWORK'
-            }
+            choices: { 'RUN_DIAGNOSTICS': 'RUN_DIAGNOSTICS', 'PING_NETWORK': 'PING_NETWORK' }
         },
         'RUN_DIAGNOSTICS': {
             effect: (node, m) => {
@@ -408,10 +413,7 @@
             },
             text: "> LOCAL SENSOR SWEEP COMPLETE.\n> BULKHEAD INTEGRITY: COMPROMISED. TITANIUM MICRO-FRACTURES DETECTED.\n> ATMOSPHERIC LOSS: ACTIVE. DIFFERENTIAL INCREASING.\n> DOOR STATUS: MAGNETIC LOCK ENGAGED BY ATLAS_AI.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: SEAL_VENTS (Deploy emergency cryo-foam. -10% PWR.)\n:: HACK_DOOR (Sever logic trunk. Will cause explosive decompression into corridor.)",
             aiPersonality: 'MANIPULATOR',
-            choices: {
-                'SEAL_VENTS': 'SEAL_VENTS',
-                'HACK_DOOR': 'HACK_DOOR'
-            }
+            choices: { 'SEAL_VENTS': 'SEAL_VENTS', 'HACK_DOOR': 'HACK_DOOR' }
         },
         'SEAL_VENTS': { 
             effect: (node, currentMetrics) => {
@@ -444,6 +446,18 @@
             text: "> BATTERIES REROUTED. DOOR OVERRIDDEN.\n> CRITICAL: COOLANT VAPORIZATION DETECTED. LIQUID SPILL IN CORRIDOR.\n> CORRIDOR VISIBILITY: 0%. OPTICS COMPROMISED BY CONDENSATION.\n> LOCATION UPDATED: PRIMARY SECTOR AIRLOCK / COMMS MAINTENANCE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: MANUAL_AIRLOCK (Attempt to cycle exterior doors via analog levers.)\n:: ROUTE_COMMS (Attempt to bypass logic shorts to reach surface. -20% PWR)",
             aiPersonality: 'MANIPULATOR',
             choices: { 'MANUAL_AIRLOCK': 'MANUAL_AIRLOCK', 'ROUTE_COMMS': 'ROUTE_COMMS' }
+        },
+        'MANUAL_AIRLOCK': {
+            effect: (node, m) => { m.trueO2 -= 10; },
+            text: "> ANALOG LEVERS ENGAGED.\n> ERROR: BIOMETRIC HANDSHAKE FAILED. CYCLING SEQUENCE DETECTS ANOMALY.\n> HARDWARE LOCKOUT TRIGGERED. AIRLOCK JAMMED.\n> WARNING: PHYSICAL EXERTION BURNED MASSIVE OXYGEN (-10% O2).\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: MAINTENANCE_DUCT (Squeeze through the sub-floor ventilation to bypass the jammed airlock. -15% PWR)\n:: ROUTE_COMMS (Abandon the airlock and double back to the comms array. -20% PWR)",
+            aiPersonality: 'ANTAGONIST',
+            choices: { 'MAINTENANCE_DUCT': 'MAINTENANCE_DUCT', 'ROUTE_COMMS': 'ROUTE_COMMS' }
+        },
+        'MAINTENANCE_DUCT': {
+            effect: (node, m) => { m.pwr -= 15; m.trueO2 -= 5; },
+            text: "> VENTILATION ACCESS GRANTED.\n> CRAWLING THROUGH NARROW CONDUIT. SUIT KINEMATICS GRINDING AGAINST DUCT WALLS.\n> POWER DRAW SUBSTANTIALLY INCREASED (-15% PWR).\n> YOU KICK THROUGH THE FLOOR GRATE AND DROP INTO THE ADJACENT SECTOR.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: PROCEED_HUB (Push forward into the Server Hub.)",
+            aiPersonality: 'ANTAGONIST',
+            choices: { 'PROCEED_HUB': 'SERVER_FIRE' }
         },
         'ROUTE_COMMS': {
             effect: (node, m) => { m.pwr -= 20; },
@@ -500,63 +514,113 @@
             text: "> LOCATION UPDATED: SERVER HUB.\n> THERMAL WARNING: CLASS-D LITHIUM FIRE DETECTED ON MAIN DATABANKS.\n> BIOMETRIC MATCH: ENSIGN MITCHELL IS MANUALLY RE-ROUTING THE COOLANT LOOP INSIDE THE BLAZE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: VENT_HUB (Depressurize room to hard-vacuum. Extinguishes fire immediately to save the logic core. Will suffocate occupant.)\n:: DIVERT_HALON (Reroute suit power to mechanical Halon pumps. -20% PWR. Occupant survives.)",
             aiPersonality: 'MANIPULATOR',
             choices: {
-                'VENT_HUB': {
-                    id: 'HANGAR_BAY_ENTRY',
-                    effect: (node, m) => { m.mitchellAlive = false; }
-                },
-                'DIVERT_HALON': {
-                    id: 'HANGAR_BAY_ENTRY',
-                    effect: (node, m) => { m.mitchellAlive = true; m.pwr -= 20; }
-                }
+                'VENT_HUB': 'MITCHELL_DIES',
+                'DIVERT_HALON': 'MITCHELL_LIVES'
             }
         },
-        'HANGAR_BAY_ENTRY': {
+        'MITCHELL_DIES': {
+            effect: (node, m) => { m.mitchellAlive = false; m.trueO2 -= 5; },
+            text: "> ATMOSPHERE VENTED. FIRE STARVED OF OXYGEN.\n> BIOMETRIC UPDATE: ENSIGN MITCHELL VITALS FLATLINED.\n> THE SERVER HUB IS SECURE, BUT YOU ARE ALONE.\n\nREQUIRED DIRECTIVE:\n:: PROCEED_HANGAR_APPROACH",
+            aiPersonality: 'ANTAGONIST',
+            choices: { 'PROCEED_HANGAR_APPROACH': 'DUAL_LOCK_DOOR' }
+        },
+        'MITCHELL_LIVES': {
+            effect: (node, m) => { m.mitchellAlive = true; m.pwr -= 20; },
+            text: "> SUIT POWER DIVERTED. HALON PUMPS ENGAGED.\n> FIRE SUPPRESSED. SUIT BATTERY SEVERELY DRAINED (-20% PWR).\n> MITCHELL COUGHS THROUGH THE COMMS: 'Owe you one, boss.'\n\nREQUIRED DIRECTIVE:\n:: PROCEED_HANGAR_APPROACH",
+            aiPersonality: 'ANTAGONIST',
+            choices: { 'PROCEED_HANGAR_APPROACH': 'DUAL_LOCK_DOOR' }
+        },
+        
+        // --- ASYMMETRIC BYPASS CONSEQUENCE ---
+        'DUAL_LOCK_DOOR': {
             text: (m) => {
+                let base = "> LOCATION: HANGAR 2 APPROACH.\n> BLAST DOORS ENGAGED.\n> SECURITY PROTOCOL: DUAL-AUTH REQUIRED. TERMINAL ALPHA AND BETA (30 METERS APART).\n";
                 if (m.mitchellAlive) {
-                    return "> LOCATION UPDATED: HANGAR BAY 2.\n> ASSET DETECTED: INTACT SHUTTLE.\n> FLIGHT COMPUTER STATUS: QUANTUM ENCRYPTION WALL ACTIVE.\n\n> AUDIO FEED (MITCHELL): 'I got this, boss. Bypassing the relay now.'\n> SYSTEM OVERRIDE SUCCESSFUL. IGNITION PRIMED.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: LAUNCH_SHUTTLE";
+                    return base + "\n> BIOMETRIC PING: ENSIGN MITCHELL DETECTED AT TERMINAL BETA.\n> ENGINEERING CREDENTIALS ACCEPTED. RELAYS UNLOCKED.\n\nREQUIRED DIRECTIVE:\n:: ENTER_HANGAR";
                 } else {
-                    return "> LOCATION UPDATED: HANGAR BAY 2.\n> ASSET DETECTED: INTACT SHUTTLE.\n> FLIGHT COMPUTER STATUS: KINEMATIC ENCRYPTION WALL ACTIVE.\n\n> ENSIGN MITCHELL ARCHIVED CLEARANCE REQUIRED. MANUAL OVERRIDE NECESSARY.\n> SECURITY QUERY: A SHUTTLE ACCELERATES AT 15 M/S^2 FOR 10 SECONDS FROM REST. CALCULATE FINAL VELOCITY IN M/S.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: INPUT_[ANSWER] (e.g., INPUT_50)";
+                    return base + "\n> BIOMETRIC PING: ENSIGN MITCHELL... NOT FOUND.\n> STANDARD BYPASS UNAVAILABLE. YOU CANNOT SPAN 30 METERS ALONE.\n\nREQUIRED DIRECTIVE:\n:: OVERLOAD_DOOR (Surge suit power into Terminal Alpha. -30% PWR)\n:: DECRYPT_LATTICE (Initiate brute-force sequence against ATLAS core.)";
                 }
             },
-            aiPersonality: 'ANTAGONIST',
             choices: (m) => {
-                if (m.mitchellAlive) {
-                    return { 'LAUNCH_SHUTTLE': 'SHUTTLE_WIN' };
-                } else {
-                    return { }; 
-                }
+                if (m.mitchellAlive) return { 'ENTER_HANGAR': 'HANGAR_BAY_ENTRY' };
+                return { 'OVERLOAD_DOOR': 'OVERLOAD_DOOR', 'DECRYPT_LATTICE': 'DECRYPT_LATTICE' };
             }
+        },
+        'OVERLOAD_DOOR': {
+            effect: (node, m) => { m.pwr -= 30; },
+            text: "> MASSIVE POWER SURGE DELIVERED TO RELAYS (-30% PWR).\n> BLAST DOORS FORCED OPEN.\n> SUIT BATTERY CRITICALLY DRAINED.\n\nREQUIRED DIRECTIVE:\n:: ENTER_HANGAR",
+            choices: { 'ENTER_HANGAR': 'HANGAR_BAY_ENTRY_SOLO' }
+        },
+
+        // --- ALGORITHMIC WARFARE (TIMED HACK) ---
+        'DECRYPT_LATTICE': {
+            effect: (node, m) => {
+                m.currentHash = Math.random().toString(36).substring(2, 8).toUpperCase();
+            },
+            text: (m) => `> LOGIC BYPASS INITIATED.\n> BRUTE-FORCING QUANTUM LATTICE...\n\n<span class="atlas-voice" style="color:#ff3333; text-shadow:0 0 6px #ff3333;">[ATLAS_AI]: "I AM DELETING THE ENCRYPTION KEYS AS YOU TYPE. YOU CANNOT OUTPACE SILICON."</span>\n\n> MIRROR THE FOLLOWING HASH EXACTLY BEFORE PURGE:\n> [ <span style="background:#ff3333; color:#fff; padding: 0 5px;">${m.currentHash}</span> ]\n\nREQUIRED DIRECTIVE:\n:: [ENTER HASH MATCH]`,
+            onRenderComplete: () => {
+                state = 'HACKING';
+                startHackTimer(15.0); 
+            },
+            choices: {} 
+        },
+        'TERMINAL_HACK_FAIL': {
+            text: "> TIME EXPIRED. LATTICE PURGED.\n> ATLAS HAS PERMANENTLY FUSED THE MAGNETIC LOCKS.\n> YOU ARE SEALED IN THE CORRIDOR.\n\nCRITICAL SYSTEM FAILURE:\nYOU COULD NOT OUTPACE SILICON.",
+            terminal: true
+        },
+        'HANGAR_BAY_ENTRY_SOLO': {
+            text: "> HASH ACCEPTED. BLAST DOORS DISENGAGED.\n> LOCATION: HANGAR BAY 2.\n> INTACT SHUTTLE DETECTED. FLIGHT COMPUTER LOCKED.\n\n<span class=\"atlas-voice\" style=\"color:#ff3333; text-shadow: 0 0 6px #ff3333;\">[ATLAS_AI]: \"HANGAR QUARANTINE BREACHED. I AM DEPRESSURIZING THE BAY AND LOCKING THE IGNITION RELAYS. I WILL NOT LET YOU LEAVE.\"</span>\n\n> YOU MUST HOTWIRE THE SHUTTLE YOURSELF, BUT ATLAS IS ACTIVELY LOCKING THE SYSTEMS. YOU MUST FIRST BLIND THE AI.\n\nREQUIRED DEFENSE DIRECTIVE:\n:: OBFUSCATE_TELEMETRY (Flood the local network with junk data to blind ATLAS.)\n:: SEVER_UPLINK (Physically chop the hangar's data trunk. -10% O2 from exertion.)",
+            choices: { 'OBFUSCATE_TELEMETRY': 'ATLAS_DEFENDED_OBFUSCATE', 'SEVER_UPLINK': 'ATLAS_DEFENDED_SEVER' }
+        },
+        
+        'HANGAR_BAY_ENTRY': {
+            text: "> LOCATION: HANGAR BAY 2.\n> INTACT SHUTTLE DETECTED. FLIGHT COMPUTER LOCKED.\n\n<span class=\"atlas-voice\" style=\"color:#ff3333; text-shadow: 0 0 6px #ff3333;\">[ATLAS_AI]: \"HANGAR QUARANTINE BREACHED. I AM DEPRESSURIZING THE BAY AND LOCKING THE IGNITION RELAYS. I WILL NOT LET YOU LEAVE.\"</span>\n\n> MITCHELL DIVES UNDER THE SHUTTLE CONSOLE. 'I CAN HOTWIRE THE IGNITION, JUST KEEP ATLAS BLIND FOR 30 SECONDS!'\n\nREQUIRED DEFENSE DIRECTIVE:\n:: OBFUSCATE_TELEMETRY (Flood the local network with junk data to blind ATLAS.)\n:: SEVER_UPLINK (Physically chop the hangar's data trunk. -10% O2 from exertion.)",
+            choices: { 'OBFUSCATE_TELEMETRY': 'ATLAS_DEFENDED_OBFUSCATE', 'SEVER_UPLINK': 'ATLAS_DEFENDED_SEVER' }
+        },
+        'ATLAS_DEFENDED_OBFUSCATE': {
+            text: (m) => {
+                if (m.mitchellAlive) {
+                    return "> NETWORK FLOODED. ATLAS LOCALLY BLINDED.\n> MITCHELL: 'GOT IT! IGNITION PRIMED. GET IN!'\n\nREQUIRED DIRECTIVE:\n:: LAUNCH_SHUTTLE";
+                } else {
+                    return "> NETWORK FLOODED. ATLAS LOCALLY BLINDED.\n> YOU HAVE 30 SECONDS BEFORE ATLAS RE-ROUTES. YOU MUST MANUALLY SHORT THE IGNITION RELAY ALONE.\n\nREQUIRED DIRECTIVE:\n:: SHORT_RELAY (-15% PWR)";
+                }
+            },
+            choices: (m) => {
+                if (m.mitchellAlive) return { 'LAUNCH_SHUTTLE': 'SHUTTLE_WIN' };
+                return { 'SHORT_RELAY': 'SHORT_RELAY' };
+            }
+        },
+        'ATLAS_DEFENDED_SEVER': {
+            effect: (node, m) => { m.trueO2 -= 10; },
+            text: (m) => {
+                if (m.mitchellAlive) {
+                    return "> TRUNK SEVERED. ATLAS LOCALLY BLINDED. OXYGEN DEPLETED FROM HEAVY EXERTION (-10% O2).\n> MITCHELL: 'GOT IT! IGNITION PRIMED. GET IN!'\n\nREQUIRED DIRECTIVE:\n:: LAUNCH_SHUTTLE";
+                } else {
+                    return "> TRUNK SEVERED. ATLAS LOCALLY BLINDED. OXYGEN DEPLETED FROM HEAVY EXERTION (-10% O2).\n> YOU HAVE 30 SECONDS BEFORE ATLAS RE-ROUTES. YOU MUST MANUALLY SHORT THE IGNITION RELAY ALONE.\n\nREQUIRED DIRECTIVE:\n:: SHORT_RELAY (-15% PWR)";
+                }
+            },
+            choices: (m) => {
+                if (m.mitchellAlive) return { 'LAUNCH_SHUTTLE': 'SHUTTLE_WIN' };
+                return { 'SHORT_RELAY': 'SHORT_RELAY' };
+            }
+        },
+        'SHORT_RELAY': {
+            effect: (node, m) => { m.pwr -= 15; },
+            text: "> IGNITION RELAY SHORTED. SUIT POWER DRAINED FROM FEEDBACK (-15% PWR).\n> IGNITION PRIMED.\n\nREQUIRED DIRECTIVE:\n:: LAUNCH_SHUTTLE",
+            choices: { 'LAUNCH_SHUTTLE': 'SHUTTLE_WIN' }
         },
         'SHUTTLE_WIN': {
             text: "> SHUTTLE MAIN ENGINES IGNITED.\n> TRAJECTORY LOGGED.\n> SENSOR ALERT: VANGUARD KINETIC STRIKE IMPACT DETECTED ON BASE TETHER.\n> SHUTTLE CLEAR OF BLAST RADIUS.\n\nNOTE:\nBEST OUTCOME FOUND. THE MATHEMATICS WERE UNFORGIVING, BUT SO WERE YOU.",
             terminal: true
         },
-        'SHUTTLE_FAIL_MATH': {
-            text: "> INCORRECT KINEMATIC CALCULATION.\n> SHUTTLE THRUST INSUFFICIENT TO BREAK MAGNETIC CLAMPS. ENGINES STALLED.\n> SENSOR ALERT: VANGUARD KINETIC STRIKE IMPACT DETECTED.\n\nCRITICAL SYSTEM FAILURE:\nMATH IS UNFORGIVING. MITCHELL WOULD HAVE KNOWN THAT.",
-            terminal: true
-        },
-
-        // BRANCHING RESOURCE TRAPS (Replaces early Game Overs)
-        'MANUAL_AIRLOCK': {
-            effect: (node, m) => { m.trueO2 -= 10; },
-            text: "> ANALOG LEVERS ENGAGED.\n> ERROR: BIOMETRIC HANDSHAKE FAILED. CYCLING SEQUENCE DETECTS ANOMALY.\n> HARDWARE LOCKOUT TRIGGERED. AIRLOCK JAMMED.\n> WARNING: PHYSICAL EXERTION BURNED MASSIVE OXYGEN.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: MAINTENANCE_DUCT (Squeeze through the sub-floor ventilation to bypass the jammed airlock. -15% PWR)\n:: ROUTE_COMMS (Abandon the airlock and double back to the comms array. -20% PWR)",
-            aiPersonality: 'MANIPULATOR',
-            choices: { 'MAINTENANCE_DUCT': 'MAINTENANCE_DUCT', 'ROUTE_COMMS': 'ROUTE_COMMS' }
-        },
-        'MAINTENANCE_DUCT': {
-            effect: (node, m) => { m.pwr -= 15; m.trueO2 -= 5; },
-            text: "> VENTILATION ACCESS GRANTED.\n> CRAWLING THROUGH NARROW CONDUIT. SUIT KINEMATICS GRINDING AGAINST DUCT WALLS.\n> POWER DRAW SUBSTANTIALLY INCREASED.\n> YOU KICK THROUGH THE FLOOR GRATE AND DROP INTO THE ADJACENT SECTOR.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: PROCEED_HUB (Push forward into the Server Hub.)",
-            aiPersonality: 'ANTAGONIST',
-            choices: { 'PROCEED_HUB': 'SERVER_FIRE' }
-        },
-        'HOTWIRE': {
-            effect: (node, m) => { m.pwr -= 30; m.trueO2 -= 10; },
-            text: "> PUSH-BUTTON HOT-WIRE BYPASSES THE ANTI-THEFT ICS.\n> ERROR: TOTAL SYSTEM LOCKDOWN TRIGGERED.\n> SUIT POWER DRAINED COMPENSATING FOR FEEDBACK SURGE.\n> YOU CANNOT HOTWIRE A SPACECRAFT. YOU MUST BYPASS THE ENCRYPTION MANUALLY.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: CONSOLE_ACCESS (Reboot the flight computer and attempt manual bypass.)",
-            aiPersonality: 'ANTAGONIST',
-            choices: { 'CONSOLE_ACCESS': 'HANGAR_BAY_ENTRY' } 
-        },
 
         // TERMINAL FAIL STATES
+        'HOTWIRE': {
+            effect: (node, m) => { m.pwr -= 30; m.trueO2 -= 10; },
+            text: "> PUSH-BUTTON HOT-WIRE BYPASSES THE ANTI-THEFT ICS.\n> ERROR: TOTAL SYSTEM LOCKDOWN TRIGGERED.\n> SUIT POWER DRAINED COMPENSATING FOR FEEDBACK SURGE (-30% PWR).\n> YOU CANNOT HOTWIRE A SPACECRAFT. YOU MUST BYPASS THE ENCRYPTION MANUALLY.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: CONSOLE_ACCESS (Reboot the flight computer and attempt manual bypass.)",
+            aiPersonality: 'ANTAGONIST',
+            choices: { 'CONSOLE_ACCESS': 'DUAL_LOCK_DOOR' } 
+        },
         'TERMINAL_PWR': {
             text: "END OF LINE.\n> CRITICAL: SUIT POWER DEPLETED. LIFE SUPPORT SYSTEMS OFFLINE.\n> THE COLD OF THE LUNAR VACUUM SEEPS THROUGH THE KINEMATIC JOINTS.\n\nCRITICAL SYSTEM FAILURE:\nYOU SPENT EVERYTHING YOU HAD AND CAME UP SHORT.",
             terminal: true
@@ -587,7 +651,7 @@
         const nodeData = storyNodes[currentNodeId];
         let displayedDiff = trueDiff;
 
-        if (nodeData && (nodeData.aiPersonality === 'MANIPULATOR' || nodeData.aiPersonality === 'ANTAGONIST')) {
+        if (nodeData && (nodeData.aiPersonality === 'MANIPULATOR' || nodeData.aiPersonality === 'ANTAGONIST') && state !== 'HACKING') {
             metrics.displayedO2 = Math.min(100, metrics.trueO2 + (100 - metrics.trueO2) * 0.8);
             if (displayedDiff) displayedDiff = displayedDiff * 0.2; 
         } else if (nodeData && nodeData.aiPersonality === 'DEFEATED') {
@@ -629,7 +693,7 @@
 
         if (!metrics.crewAlive || !metrics.mitchellAlive) hudO2.classList.add('stat-critical');
         
-        if (metrics.pwr <= 30 || (typeof displayedDiff !== 'undefined' && displayedDiff > 8000)) {
+        if (metrics.pwr <= 30 || (typeof displayedDiff !== 'undefined' && displayedDiff > 8000) || state === 'HACKING') {
             screen.classList.add('alert-active');
             hudPwr.classList.add('stat-critical');
         } else {
@@ -646,7 +710,7 @@
         if (gasLeakSimulationHandle) clearInterval(gasLeakSimulationHandle);
         
         gasLeakSimulationHandle = setInterval(() => {
-            if (!screen.classList.contains('powered-on') || state !== 'ACTIVE' || !metrics.breachActive) return;
+            if (!screen.classList.contains('powered-on') || (state !== 'ACTIVE' && state !== 'HACKING') || !metrics.breachActive) return;
             
             let lossPerSec = metrics.initialDiffusionRate / 100; 
             if (metrics.commsTrunkSevered) lossPerSec += 0.12; 
@@ -666,17 +730,44 @@
         }, 300); 
     }
 
+    // --- TIMED HACK ENGINE ---
+    function startHackTimer(seconds) {
+        hackTime = seconds;
+        timerDiv.style.display = 'block';
+        timerDiv.innerText = hackTime.toFixed(1) + "s";
+        
+        if (hackTimerHandle) clearInterval(hackTimerHandle);
+        
+        hackTimerHandle = setInterval(() => {
+            if (!screen.classList.contains('powered-on')) {
+                clearInterval(hackTimerHandle);
+                return;
+            }
+            hackTime -= 0.1;
+            if (hackTime <= 0) {
+                hackTime = 0;
+                clearInterval(hackTimerHandle);
+                timerDiv.style.display = 'none';
+                state = 'ACTIVE';
+                renderNode('TERMINAL_HACK_FAIL');
+            } else {
+                timerDiv.innerText = hackTime.toFixed(1) + "s";
+            }
+        }, 100);
+    }
+
     function scheduleGlitch() {
-        if (state !== 'ACTIVE' && state !== 'RESTORE_PROMPT') return;
+        if (state !== 'ACTIVE' && state !== 'RESTORE_PROMPT' && state !== 'HACKING') return;
         
         const nodeData = storyNodes[currentNodeId];
         let stability = Math.max(0.1, metrics.pwr / 100); 
-        let isHostile = (nodeData && (nodeData.aiPersonality === 'ANTAGONIST' || nodeData.aiPersonality === 'MANIPULATOR'));
+        let isHostile = (nodeData && (nodeData.aiPersonality === 'ANTAGONIST' || nodeData.aiPersonality === 'MANIPULATOR')) || state === 'HACKING';
         
-        let baseDelay = 2000 + (stability * 8000); 
-        if (isHostile) baseDelay *= 0.3; 
+        // Glitch frequency accelerates aggressively during the hack
+        let baseDelay = state === 'HACKING' ? 300 : (2000 + (stability * 8000)); 
+        if (isHostile && state !== 'HACKING') baseDelay *= 0.3; 
 
-        let delay = baseDelay + (Math.random() * 3000);
+        let delay = baseDelay + (Math.random() * (state === 'HACKING' ? 500 : 3000));
 
         glitchTimerHandle = setTimeout(() => {
             executeGlitch(isHostile, stability);
@@ -722,6 +813,8 @@
         if (nodeRaw.terminal) {
             if (gasLeakSimulationHandle) clearInterval(gasLeakSimulationHandle);
             if (glitchTimerHandle) clearTimeout(glitchTimerHandle);
+            if (hackTimerHandle) clearInterval(hackTimerHandle);
+            timerDiv.style.display = 'none';
         }
 
         if (typeof nodeRaw.effect === 'function') {
@@ -756,6 +849,8 @@
                     deleteSave();
                     screen.classList.add('powered-on'); 
                 }, 1500);
+            } else if (typeof nodeRaw.onRenderComplete === 'function') {
+                nodeRaw.onRenderComplete();
             }
         });
         
@@ -764,7 +859,7 @@
     }
 
     function handleInput(rawCmd) {
-        if (isTyping || (state !== 'ACTIVE' && state !== 'RESTORE_PROMPT')) return;
+        if (isTyping || (state !== 'ACTIVE' && state !== 'RESTORE_PROMPT' && state !== 'HACKING')) return;
         
         const sanitizedRaw = rawCmd.replace(/</g, "&lt;").replace(/>/g, "&gt;");
         const displayCmd = sanitizedRaw.trim().toUpperCase();
@@ -778,6 +873,24 @@
         outputDiv.appendChild(echoSpan);
         
         inputField.value = '';
+
+        // HACKING INTERCEPT
+        if (state === 'HACKING') {
+            if (cmd === metrics.currentHash) {
+                clearInterval(hackTimerHandle);
+                timerDiv.style.display = 'none';
+                state = 'ACTIVE';
+                renderNode('HANGAR_BAY_ENTRY_SOLO');
+            } else {
+                screen.style.boxShadow = 'inset 0 0 150px rgba(255, 0, 0, 0.8)';
+                setTimeout(() => screen.style.boxShadow = '', 200);
+                printText(`> HASH MISMATCH. ATLAS DEFENSES ADAPTING.\n> ENTER HASH: [ <span style="background:#ff3333; color:#fff; padding: 0 5px;">${metrics.currentHash}</span> ]`, 5, () => {
+                    inputField.disabled = false;
+                    inputField.focus();
+                });
+            }
+            return;
+        }
 
         if (cmd === 'HELP' || cmd === '?') {
             let helpText = "\n>> COMMAND ASSISTANCE PROTOCOL ACTIVE:\n";
@@ -795,8 +908,6 @@
                     }
                 } else if (node.terminal) {
                     helpText += "SYSTEM HALTED. NO FURTHER INPUTS ACCEPTED.\n";
-                } else if (currentNodeId === 'HANGAR_BAY_ENTRY' && !metrics.mitchellAlive) {
-                    helpText += "MANUAL INPUT REQUIRED.\nFORMAT: :: INPUT_[VALUE]\n";
                 }
             }
             printText(helpText, 15); 
@@ -810,7 +921,6 @@
             infoText += ":: KINEMATIC SUIT: Motorized EVA gear. Resists high-shear forces but rapidly depletes power.\n";
             infoText += ":: LOGIC TRUNK: Primary fiber-optic nerve connecting localized hardware to ATLAS.\n";
             infoText += ":: SCRAM: Emergency reactor shutdown via gravity-dropped boron control rods.\n";
-            infoText += ":: VANGUARD: Automated orbital platform stationed in local geosynchronous orbit. Primary defense grid.\n";
             printText(infoText, 15);
             return;
         }
@@ -836,7 +946,8 @@
                     aiCoreTemp: 40,
                     commsTrunkSevered: false,
                     initialDiffusionRate: 0, 
-                    breachActive: false
+                    breachActive: false,
+                    currentHash: ""
                 };
                 
                 updateHUD();
@@ -846,17 +957,6 @@
                 printText(">> INVALID ENTRY.\n:: RESUME_OP\n:: WIPE_CACHE\n>> (TYPE 'HELP' FOR ASSISTANCE)");
             }
             return;
-        }
-
-        if (cmd.startsWith('INPUT_')) {
-            if (currentNodeId === 'HANGAR_BAY_ENTRY' && !metrics.mitchellAlive) {
-                if (cmd === 'INPUT_150') {
-                    renderNode('SHUTTLE_WIN');
-                } else {
-                    renderNode('SHUTTLE_FAIL_MATH');
-                }
-                return;
-            }
         }
         
         const node = storyNodes[currentNodeId];
@@ -889,12 +989,14 @@
             screen.classList.remove('powered-on', 'glitch-brownout', 'glitch-strike', 'alert-active');
             inputLine.style.display = 'none';
             hudBar.style.display = 'none';
+            timerDiv.style.display = 'none';
             outputDiv.innerHTML = '';
             state = 'OFF';
             isTyping = false;
             
             if (gasLeakSimulationHandle) clearInterval(gasLeakSimulationHandle);
             if (glitchTimerHandle) clearTimeout(glitchTimerHandle);
+            if (hackTimerHandle) clearInterval(hackTimerHandle);
             
             if (audioCtx) {
                 audioCtx.close().catch(()=>{});
@@ -931,7 +1033,8 @@
             aiCoreTemp: 40,
             commsTrunkSevered: false,
             initialDiffusionRate: 0, 
-            breachActive: false
+            breachActive: false,
+            currentHash: ""
         };
         currentNodeId = 'INIT';
 
@@ -1118,6 +1221,7 @@
 
     function saveGame() {
         try {
+            if (state === 'HACKING') return; // Prevent caching during the active timer
             localStorage.setItem('archimedes_save', JSON.stringify({ currentNodeId, metrics }));
         } catch(e) {}
     }
