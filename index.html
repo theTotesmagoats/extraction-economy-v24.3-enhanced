@@ -31,6 +31,7 @@
             position: relative;
             display: flex;
             flex-direction: column;
+            transition: transform 0.05s, border-color 0.3s;
         }
 
         .rivet {
@@ -220,7 +221,7 @@
             font-weight: bold;
         }
         .stat-critical { color: #ffab00; animation: blinker 1s infinite; }
-
+        
         @media (hover) {
             .hint-intuition::after {
                 content: " (" attr(data-hint) ")";
@@ -279,7 +280,6 @@
     const screen = document.getElementById('screen');
     const powerButton = document.getElementById('power-button');
 
-    // HUD Elements
     const hudO2 = document.getElementById('hud-o2');
     const hudPwr = document.getElementById('hud-pwr');
     const hudDif = document.getElementById('hud-diff'); 
@@ -291,303 +291,255 @@
     let staticGainNode;
     let keyNoiseBuffer;
 
-    // Physics + Narrative State Variables
     let metrics = {
         o2: 100,
         pwr: 30,
-        hullIntegrity: 'STABLE', 
+        hullIntegrity: 'STABLE',
         crewAlive: true,
         aiCoreActive: true,
         commsTrunkSevered: false,
         hangarIrradiated: false,
         initialDiffusionRate: 15, 
-        diffusionDecayFactor: 0.75
+        diffusionDecayFactor: 0.75, 
     };
 
     let currentNodeId = 'INIT';
-    
-    // --- SECOND ORDER GRAPH LOGIC ---
+    let lastUpdateSecs = performance.now(); 
+
     const storyNodes = {
         'INIT': {
-            text: "LUNAR FACILITY ARCHIMEDES.\nKINETIC IMPACT DETECTED. SECTOR 4 DESTROYED.\nSYSTEM VELOCITY: CASCADING FAILURE.\n\nYOU ARE SEALED IN THE OVERSEER QUARTERS.\nATMOSPHERE IS VENTING THROUGH MICRO-FRACTURES IN THE BULKHEAD.\nSELECT IMMEDIATE TACTICAL RESPONSE:\n[1] SEAL VENTS WITH STRUCTURAL FOAM\n[2] HACK MAGNETIC DOOR SEAL TO ESCAPE TO CORRIDOR",
+            text: "LUNAR FACILITY ARCHIMEDES.\nKINETIC IMPACT DETECTED. SECTOR 4 DESTROYED.\nSYSTEM VELOCITY: CASCADING FAILURE.\n\nYOU ARE SEALED IN THE OVERSEER QUARTERS.\nATMOSPHERE IS VENTING THROUGH MICRO-FRACTURES IN THE BULKHEAD.",
             choices: {
                 '1': { 
                     id: 'SEAL_VENTS', 
-                    effect: () => {
-                        metrics.o2 -= 5; // immediate cost to act
-                        metrics.initialDiffusionRate = 0.8;
+                    effect: (node, currentMetrics) => {
+                        currentMetrics.o2 -= 5; 
+                        currentMetrics.initialDiffusionRate = 0.8; 
+                        return `> VENTS SEALED.\nSECOND ORDER PHYSICS:\nDIFFUSION RATE REDUCED TO ~<span class="stat-critical">${currentMetrics.initialDiffusionRate}</span> Pa/s\n(Surface tension and gas friction now dominate over bulk flow)\n\n[1] DRAIN CRYO TO POWER DOORS\n[2] OVERRIDE AI GOVERNORS`;
                     }
                 },
                 '2': { 
                     id: 'HACK_DOOR',
-                    effect: () => {
-                        metrics.commsTrunkSevered = true;
+                    effect: (node, currentMetrics) => {
+                        currentMetrics.commsTrunkSevered = true;
+                        return `> DOOR OPENS. \nSECOND ORDER PHYSICS:\nNO O₂ SEALING PERFORMED.\nPRESSURE DIFFERENTIAL STILL HIGH.\nGAS WILL CONTINUE ESCAPING.\n\n[1] FIX REACTOR RELAY\n[2] RESCUE CREWMATE`;
                     }
                 },
             },
         },
-        
-        // Now dynamic text nodes for choice-specific physics flavor
-        'SEAL_VENTS': (m) => {
-            return `> VENTS SEALED.\nSECOND ORDER PHYSICS:\nDIFFUSION RATE REDUCED TO ~<span class="stat-critical">${m.initialDiffusionRate}</span> Pa/s\n(Surface tension and gas friction dominate).\n\nYOU ARE TRAPPED IN THE ROOM. MAIN TERMINAL HAS LIMITED ACCESS.\nSELECT TACTICAL RESPONSE:\n[1] DRAIN CRYOGENICS TO POWER DOORS\n[2] OVERRIDE AI GOVERNORS`;
+        'SEAL_VENTS': {
+            text: (currentMetrics) => storyNodes['INIT'].choices['1'].effect(null, currentMetrics),
+            choices: { '1': 'DRAIN_CRYO', '2': 'OVERRIDE_AI' }
         },
-
-        'HACK_DOOR': (m) => {
-            return `> DOOR OPENS.\nSECOND ORDER PHYSICS:\nNO O₂ SEALING PERFORMED—PRESSURE DIFFERENTIAL REMAINS HIGH.\nGAS CONTINUES ESCAPING AT INITIAL VELOCITY.\n\nYOU STEP INTO CORRIDOR. ZERO-G ENVIRONMENT.\nDEBRIS FLOATS NEAR SPARKING REACTOR RELAY.\nCREWMATE IS PINNED BEHIND FALLEN STRUT.\nSELECT TACTICAL RESPONSE:\n[1] FIX RELAY (PRESERVE HANGAR)\n[2] RESCUE CREWMATE (EXPEND SUIT O₂)`;
+        'HACK_DOOR': {
+            text: (currentMetrics) => storyNodes['INIT'].choices['2'].effect(null, currentMetrics),
+            choices: { '1': 'FIX_RELAY', '2': 'RESCUE_CREW' }
         },
-
         'DRAIN_CRYO': {
             effect: () => { metrics.pwr += 40; metrics.crewAlive = false; },
-            text: "FIRST ORDER EFFECT: LOCAL GRID RESTORED. DOOR UNLOCKED.\nSECOND ORDER PHYSICS:\nCRYOGENIC FLUID VAPORIZATION—RISK OF CONDENSATION ON OPTICS.\n\n[1] MANUAL AIRLOCK OVERRIDE\n[2] RE-WIRE COMMS ARRAY",
-            choices: {
-                '1': 'MANUAL_AIRLOCK',
-                '2': 'REWIRE_COMMS'
-            }
+            text: "FIRST ORDER EFFECT: LOCAL GRID RESTORED. DOOR UNLOCKED.\nSECOND ORDER PHYSICS:\nCRYOGENIC FLUID VAPORIZATION SPILLS INTO CORRIDORS—\nRISK OF CONDENSATION ON OPTICS.\n\n[1] MANUAL AIRLOCK OVERRIDE (HIGH RISK)\n[2] RE-WIRE COMMS ARRAY",
+            choices: { '1': 'MANUAL_AIRLOCK', '2': 'REWIRE_COMMS' }
         },
         'OVERRIDE_AI': {
             effect: () => { metrics.pwr += 60; metrics.aiCoreActive = false; },
-            text: "FIRST ORDER EFFECT: POWER SURGE RESTORES DOOR.\nSECOND ORDER PHYSICS:\nCOOLANT LOOP PULSE DETECTED—TEMPERATURE RISE STABILIZES… FOR NOW.\n\n[1] LAUNCH POD (BLIND)\n[2] MANUAL SCRAM",
-            choices: {
-                '1': 'BLIND_LAUNCH',
-                '2': 'MANUAL_SCRAM'
-            }
+            text: "FIRST ORDER EFFECT: POWER SURGE RESTORES DOOR.\nSECOND ORDER PHYSICS:\nREACTOR COOLANT LOOP PULSES—\nTEMP VELOCITY: RISING. CORE STRESS NOT YET CRITICAL.\n\n[1] LAUNCH POD (NO NAV)\n[2] MANUAL SCRAM",
+            choices: { '1': 'BLIND_LAUNCH', '2': 'MANUAL_SCRAM' }
         },
-        
         'FIX_RELAY': {
             effect: () => { metrics.crewAlive = false; },
-            text: "FIRST ORDER EFFECT: RADIATION CONTAINED.\nSECOND ORDER PHYSICS:\nMAGNETIC FLUX SHIFTS—COMPASS CALIBRATION OFF BY ~4°\nCREWMATE LOST IN DEBRIS.\n\nYOU REACH HANGAR. SHUTTLE INTACT, BUT LOCKOUT ACTIVE.\n[1] BRUTE-FORCE HOTWIRE\n[2] AI UPLINK",
-            choices: {
-                '1': 'HOTWIRE',
-                '2': 'AI_UPLINK'
-            }
+            text: "FIRST ORDER EFFECT: RADIATION CONTAINED.\nSECOND ORDER PHYSICS:\nMAGNETIC FLUX CHANGES—COMPASS CALIBRATION OFF.\nCREWMATE NOT SAVED.\n\nHANGAR: SHUTTLE INTACT. IGNITION REQUIRES ENGINEERING CLEARANCE OR AI UPLINK.",
+            choices: { '1': 'HOTWIRE', '2': 'AI_UPLINK' }
         },
         'RESCUE_CREW': {
             effect: () => { metrics.o2 -= 15; }, 
-            text: "FIRST ORDER EFFECT: CREWMATE SAVED. ENGINEERING CODES ACQUIRED.\nSECOND ORDER PHYSICS:\nO₂ USE SPiked—YOUR SUIT HEAT EXCHANGER IS STRAINED.\nPRESSURE DIFFERENTIAL DROPS TO ~2,300 PA.\n\n[1] SECONDARY PODS (SAFE)\n[2] RAD-DASH ANYWAY",
-            choices: {
-                '1': 'SECONDARY_PODS',
-                '2': 'RAD_DASH'
-            }
+            text: "FIRST ORDER EFFECT: CREWMATE SAVED. KEYCODES ACQUIRED.\nSECOND ORDER PHYSICS:\nYOUR SUIT ISO-HEATED OVERDRIVE DRAWS EXTRA PWR FROM GRID.\nPRESSURE DROP DETECTED—SIMULATIONS SHOW YOU RAN THROUGH HIGH-SHEAR FLOW.\n\n[1] PROCEED TO SECONDARY PODS WITH CREWMATE\n[2] RAD-DASH ANYWAY",
+            choices: { '1': 'SECONDARY_PODS', '2': 'RAD_DASH' }
         },
-
-        // ENDINGS — same as before
+        
         'MANUAL_AIRLOCK': {
-            text: "END OF LINE.\nThe AIRLOCK FAILS WITHOUT BIOMETRICS.\nYOU ARE PURGED WITH DEBRIS INTO SPACE.\n\nCRITICAL FAILURE:\nSYSTEM COHERENCE OVERLOOKED—HUMAN RESOURCES MATTER.",
+            text: "END OF LINE.\nWITHOUT BIOMETRICS OR AI ASSISTANCE, THE AIRLOCK FAILS. \nTHE CYCLING SEQUENCE TRIGGERS A SAFETY LOCKOUT.\n\nCRITICAL FAILURE IDENTIFIED:\nLACK OF SYSTEM COHERENCE — OPERATIONAL CHOICE IGNORED HUMAN RESOURCE INTEGRITY.",
             terminal: true
         },
         'REWIRE_COMMS': {
-            text: "END OF LINE.\nCOMMS TRUNK SEVERED. NO PATHS TO ANTENNA.\nYOU DRAIN O₂ IN TOTAL SILENCE.\n\nCRITICAL FAILURE:\nIGNORING PHYSICAL CASCADE — LEAK ≠ SIGNAL FAILURE.",
+            text: "END OF LINE.\nCOMMS TRUNK SEVERED. NO PATHS TO SURFACE ANTENNA.\nOXYGEN LEVELS FALLING. YOUR FINAL TRANSMISSION IS A STATIC SIGH.\n\nCRITICAL FAILURE IDENTIFIED:\nIGNORING HARDWARE DEGRADATION—GAS LEAKAGE ≠ CABLE FAILURE.",
             terminal: true
         },
         'BLIND_LAUNCH': {
-            text: "END OF LINE.\nThe pod exits without NAV. LUNAR GRAVITY SLOWS IT, THEN FLINGS IT OUTWARD.\nO₂ DEPLETED IN 8 HRS. NO DISTRESS SIGNAL.\n\nCRITICAL FAILURE:\nOMITTING SECONDARY PHYSICS (ATMOSPHERIC SHEAR).",
+            text: "END OF LINE.\nPOD THRUSTS STRAIGHT UP. GRAVITY FIELD TAPERING NOT ACCOUNTED FOR.\nPITCH ROTATES — THROTTLE JITTER—THE POD SKIPS INTO VOID.\n\nCRITICAL FAILURE IDENTIFIED:\nMISSING SECONDARY PHYSICS—ATMOSPHERIC SHEAR IN ESTIMATES.",
             terminal: true
         },
         'MANUAL_SCRAM': {
-            text: "END OF LINE.\nThe core is *already* at pseudo-stable. Insertion lags behind heat front.\nYOU HIT THE LEVER… TOO LATE.\n\nCRITICAL FAILURE:\nNOTICING VELOCITY—AND CHOOSING TO ACT ON IT.",
+            text: "END OF LINE.\nCORE TEMP IS ALREADY AT PSEUDO-EQUILIBRIUM. ROD insertion delays COOLANT surge by <20 ms—\nHEAT RAPIDLY OVERRUNS SAFE THRESHOLD.\n\nCRITICAL FAILURE IDENTIFIED:\nNOTICING EXPONENTIAL TEMPERATURE VELOCITY — AND CHOOSING NOT TO TRUST IT.",
             terminal: true
         },
         'HOTWIRE': {
-            text: "END OF LINE.\nPUSH-BUTTON bypass trips security ICs. SYSTEM LOCKS.\nO₂ FALLS TO 3% BEFORE ALARM SOUNDS.\n\nCRITICAL FAILURE:\nDISREGARD FOR INTEGRITY—NO ONE PLANS TO BREAK PROTOCOL AND GET AWAY WITH IT.",
+            text: "END OF LINE.\nPUSH-BUTTON HOT-WIRE Bypasses Anti-theft ICs. SYSTEM LOCKDOWN.\nO₂ CONSUMED AT ~9.5 L/HR IN STASIS.\nYOU DRAIN IT TO 3% BEFORE THE ALARM EVEN SOUNDS.\n\nCRITICAL FAILURE IDENTIFIED:\nHARDWARE HONESTY — YOU DIDN'T ASK “WILL IT WORK?”\nYOU ASKED, “HOW MANY FAILURES DOES THIS COST?”",
             terminal: true
         },
         'AI_UPLINK': {
-            text: "SURVIVAL SECURED.\nATLAS AI UPLINK COMPLETE. SHUTTLE CHECKS PASS.\nPHYSICS MODEL USED FOR GRAVITY SKIP CALCULATION.\nYOU LAND NEAR KENNEDY.\nALL CREW LOST, BUT THE SYSTEM LIVES.\nLOGICAL.",
+            text: "SURVIVAL SECURED.\nATLAS AI UPLINK SUCCEEDS. SHUTTLE INTEGRITY CHECKS COMPLETE.\n\nNOTE:\nPHYSICS MODEL USED TO TRAJECTORY-SKIP EARTH GRAVITY SLINGSHOT.\nYOU LAND NEAR KENNEDY SPACE CENTER.\nALL CREW EXPENDED—BUT SYSTEMS SURVIVED.\nLOGICAL. RATIONAL. FINAL.",
             terminal: true
         },
         'SECONDARY_PODS': {
-            text: "SURVIVAL SECURED.\nYOU AND CREWMATE REACH POD. KEYCODES BYPASS LOCKDOWN.\nGAS EXPULSION ESTIMATED AT 12 m/s — ~F-16 TAKEOFF VELOCITY INSIDE YOUR HELMET!\nYOU LAUNCH SAFELY.\nBEST OUTCOME—USING FLEXIBILITY OVER RIGID AUTOMATION.",
+            text: "SURVIVAL SECURED.\nYOU AND CREWMATE REACH SECONDARY POD.\nENGINEERING CODES BYPASS THE LOCKDOWN.\nO₂ CONSERVED DURING DEPRESSURIZATION—GAS FLOWS AT ~12 m/s\n(That's the speed of a Formula 1 car in your suit vents!)\nYOU LAUNCH.\n\nNOTE:\nBEST OUTCOME FOUND—USING *HUMAN* FLEXIBILITY, NOT MACHINE RIGIDITY.",
             terminal: true
         },
         'RAD_DASH': {
-            text: "END OF LINE.\nThe radiation doesn’t burn—you see the POLYCARBONATE ON YOUR HELMET CLOUDING IN REAL-TIME.\nVISIBILITY 0. O₂ 4%. COLLAPSE BEFORE ALERT.\n\nCRITICAL FAILURE:\nIGNORED LETHAL INTEGRALS (DOSE × TIME).",
+            text: "END OF LINE.\nTHE RADIATION ISN’T THE KILLER—IT’S THE SUIT OXIDE BREAKDOWN.\nAT ~50 mSv, YOUR POLYCARBONATE HELMET CLOUDS—VISIBILITY ZERO.\n\nCRITICAL FAILURE IDENTIFIED:\nIGNORED DOSE × EXPOSURE TIME — LETHAL INTEGRAL UNCALCULATED.",
             terminal: true
         }
     };
 
-    // New helper for updating pressure gradient based on state
-    function calculateDiff() {
-        const base = 1000; 
-        const leak = metrics.commsTrunkSevered ? 7000 : 0;
-        return Math.max(120, (leak + metrics.initialDiffusionRate * 65)); 
+    function updateHUD(diff = null) {
+        hudO2.innerText = `O₂: ${Math.round(metrics.o2)}%`;
+        hudPwr.innerText = `PWR: ${Math.round(metrics.pwr)}%`;
+
+        if (!diff || diff == null || isNaN(diff)) {
+            hudDif.innerHTML = `DYNAMIC DIFF: <span class="hint-intuition" data-hint="Pressure differential, in Pa">?</span>? PA`;
+        } else {
+            const safeDiff = Math.abs(Math.round(diff));
+            let diffStr = '';
+            if (safeDiff > 10000) diffStr = `<span style="color:#f34">+${safeDiff} PA</span>`; 
+            else if (safeDiff > 5000) diffStr = `+${safeDiff} PA`;
+            else diffStr = `<span class="stat-critical">±${safeDiff}</span> PA`;
+            
+            hudDif.innerHTML = `DYNAMIC DIFF: <span class="hint-intuition" data-hint="${Math.round(safeDiff/10)} m/s gas flow">▼</span> ${diffStr}`;
+        }
+
+        let crewStatus = metrics.crewAlive ? "STASIS/ACTIVE" : "EXPENDED";
+        if (!metrics.crewAlive) hudO2.classList.add('stat-critical');
+        
+        if (metrics.pwr <= 30 || (typeof diff !== 'undefined' && diff > 8000)) hudPwr.classList.add('stat-critical');
+        else hudPwr.classList.remove('stat-critical');
+
+        const hullClass = screen.parentElement.closest('#chassis').classList;
+        
+        if (metrics.pwr <= 10) {
+            screen.style.boxShadow = 'inset 0 0 95px rgba(255, 60, 60, 0.3)';
+        } else if (typeof diff !== 'undefined' && diff > 10000) {
+            screen.classList.add('alert-active');
+        } else {
+            screen.style.boxShadow = '';
+            screen.classList.remove('alert-active');
+        }
+
+        return safeDiff;
     }
 
-    function updateHUD() {
-        hudO2.innerText = `O₂: ${Math.floor(metrics.o2)}%`;
-        hudPwr.innerText = `PWR: ${Math.floor(metrics.pwr)}%`;
-        
-        const currentDiff = calculateDiff();
-        let diffStr;
-        if (currentDiff > 5000) diffStr = `<span class="stat-critical">+${currentDiff} PA</span>`;
-        else diffStr = `+${currentDiff} PA`;
-        
-        hudDif.innerHTML = `DYNAMIC DIFF: <span class="hint-intuition" data-hint="${Math.round(currentDiff / 20)} m/s flow rate">▼</span> ${diffStr}`;
-
-        hudO2.classList.remove('stat-critical');
-        hudPwr.classList.remove('stat-critical');
-        screen.classList.remove('alert-active');
-
-        if (metrics.o2 <= 40 || currentDiff > 10000) hudO2.classList.add('stat-critical');
-        
-        if (metrics.pwr <= 20) hudPwr.classList.add('stat-critical');
-
-        // Alert visual when O2 + Diff are both bad
-        if ((metrics.o2 < 45 || currentDiff > 7000)) screen.classList.add('alert-active');
-        
-    }
+    let gasLeakSimulationHandle;
 
     function startGasDecaySim() {
-        if (window.decayTimer) clearInterval(window.decayTimer);
-        window.decayTimer = setInterval(() => {
+        if (gasLeakSimulationHandle) clearInterval(gasLeakSimulationHandle);
+        
+        gasLeakSimulationHandle = setInterval(() => {
             const now = performance.now();
+            if (!screen.classList.contains('powered-on') || state !== 'ACTIVE') return;
             
-            let lossPerSec = metrics.initialDiffusionRate / 500;
+            let lossPerSec = metrics.initialDiffusionRate / 1000; 
             
             if (metrics.commsTrunkSevered) {
-                // slight continuous leak even after fix
-                lossPerSec += 0.35;
+                lossPerSec += 0.15;
             }
-            
-            metrics.o2 -= lossPerSec;
+
+            metrics.o2 -= lossPerSec; 
             if (metrics.o2 < 0) metrics.o2 = 0;
-            
-            updateHUD();
-        }, 350);
+
+            updateHUD(lossPerSec * 150); 
+
+        }, 300); 
     }
 
-    function renderNode(nodeIdOrFactoryFn) {
-        let nodeId = nodeIdOrFactoryFn;
+    function renderNode(nodeId) {
+        currentNodeId = nodeId;
+        const nodeRaw = storyNodes[nodeId];
+        if (nodeRaw.terminal) {
+            if (gasLeakSimulationHandle) clearInterval(gasLeakSimulationHandle);
+        }
 
-        // If factory function, invoke with current metrics
-        let nodeText = storyNodes[nodeId];
-        
-        if (typeof(nodeText) === 'function') {
-            try {
-                nodeText = nodeText(metrics);
-                if (storyNodes[nodeId].effect && typeof storyNodes[nodeId].effect === "function") 
-                    storyNodes[nodeId].effect();
-            } catch (e) {
-                nodeText = `>> NODE ERROR: ${nodeId} — FATAL.`;
-                nodeId = null; // break cycle
+        // Process effect immediately if node has one
+        if (typeof nodeRaw.effect === 'function') {
+            nodeRaw.effect();
+        }
+
+        let nodeText = "";
+        try {
+            nodeText = typeof(nodeRaw.text) === 'function'
+                ? nodeRaw.text(metrics)
+                : nodeRaw.text;
+        } catch (e) { 
+            nodeText = `>> NODE RENDER ERROR: ${e.message}\nTERMINAL PAUSED.\nATLAS SYS: PROCEEDING TO SAFE STATE.`; 
+        }
+
+        if (!nodeText.trim().includes('CRITICAL')) updateHUD(metrics.initialDiffusionRate * 200);
+
+        printText(nodeText, 30, () => {
+            if (nodeRaw.terminal) {
+                setTimeout(() => {
+                    inputField.style.display = 'none';
+                    promptSpan.innerText = "SYSTEM HALTED.";
+                    deleteSave();
+                    screen.classList.add('powered-on'); 
+                }, 1500);
             }
-        }
-
-        currentNodeId = nodeId || 'INIT';
-
-        if (nodeId && !storyNodes[nodeId].terminal) {
-            if (typeof storyNodes[nodeId] !== 'function' && storyNodes[nodeId].effect)
-                storyNodes[nodeId].effect();
-
-            printText(nodeText, 20, () => {
-                updateHUD(); // recalibrate after text prints
-                startGasDecaySim(); 
-            });
-
-        } else if (storyNodes[nodeId]?.terminal) {
-            clearInterval(window.decayTimer);
-            printText(nodeText, 30, () => {
-                inputField.style.display = 'none';
-                promptSpan.innerText = "SYSTEM HALTED.";
-                screen.classList.remove('alert-active');
-                if(staticGainNode)
-                    staticGainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 2);
-            });
-        }
-
-        saveGame(); // persist after every move
+        });
+        
+        saveGame(); 
+        startGasDecaySim(); 
     }
 
     function handleInput(rawCmd) {
+        if (isTyping || (state !== 'ACTIVE' && state !== 'RESTORE_PROMPT')) return;
+        
         const sanitizedRaw = rawCmd.replace(/</g, "&lt;").replace(/>/g, "&gt;");
         const cmd = sanitizedRaw.trim().toUpperCase();
 
-        outputDiv.innerHTML += `<span style="color:#e0e0e0">> ${rawCmd}</span><br>`;
+        outputDiv.innerHTML += `<span style="color:#e0e0e0">> ${cmd}</span><br>`;
         inputField.value = '';
         
-        if (!cmd) return;
-        
-        // RESTORE PROMPT Logic — now *actually* usable!
+        if (cmd.length < 1) return;
+
         if (state === 'RESTORE_PROMPT') {
-            if (cmd === '1' || cmd.toLowerCase().includes('resume')) {
+            if (cmd === '1') {
                 state = 'ACTIVE';
                 hudBar.style.display = 'flex';
                 loadGame();
-                printText(">> RESTORATION COMPLETE.\nREBOOTING PHYSICS LAYER...\nATLAS SYS: READY.");
-                return;
-            }
-            else if (cmd === '2' || cmd.toLowerCase().includes('wipe')) {
+            } else if (cmd === '2') {
                 state = 'ACTIVE';
-                deleteSave();
                 hudBar.style.display = 'flex';
-                metrics.initialDiffusionRate = 10; // reset diffusion
-                updateHUD(); // set defaults again
+                deleteSave();
+                metrics.initialDiffusionRate = 10;
+                updateHUD();
                 renderNode('INIT');
-                printText(">> CACHE PURGED.\nINITIALIZING FIRST NODE: INITIAL");
-                return;
+            } else {
+                printText(">> INVALID ENTRY. [1] RESUME OR [2] WIPE CACHE:");
             }
-            else {
-                printText("INVALID SELECTION. TRY [1] TO RESUME, OR [2] TO WIPE CACHE AND RESTART.");
-                return;
-            }
+            return;
         }
+        
+        const node = storyNodes[currentNodeId];
+        let nextNodeId = null;
 
-        if (state === 'ACTIVE' && currentNodeId in storyNodes) {
-            const node = storyNodes[currentNodeId];
-
-            // Check for function nodes that auto-exit when printed
-            if (typeof(node) === 'function') {
-                printText(">> SYNTAX ERROR IN DATA. PLEASE CHECK TACTICAL SELECTION.");
-                return;
-            }
-            
-            let choicesObj = {};
-            if (node && node.choices && typeof node.choices !== "function")
-                choicesObj = node.choices;
-
-            // Support [1] input and raw key string match
-            let choiceKey = null;
-
-            for(let key in choicesObj) {
-                // exact number matches first
-                if (parseInt(key) === parseInt(cmd)) {
-                    choiceKey = key;
+        if (typeof node.choices === 'object') {
+            for (const [key, val] of Object.entries(node.choices)) {
+                if (cmd === key.toUpperCase() || cmd === String(parseInt(key))) {
+                    nextNodeId = typeof val === 'object' ? val.id : val;
                     break;
-                } else if (typeof(choicesObj[key]) === "object") { // support object forms
-                    const nextNodeName = Object.values(choicesObj[key]);
-                    if(nextNodeName.includes(cmd)) choiceKey=key; 
-                } else {
-                    // allow keyword partial match e.g. RES, RE
-                    const candidate = String(key).toLowerCase();
-                    const inputMatch = cmd.toLowerCase().startsWith(candidate.slice(0,3));
-                    
-                    if(inputMatch) choiceKey = key;
+                } else if (typeof val === 'string' && val.toUpperCase() === cmd) {
+                    nextNodeId = val; 
+                    break;
+                } else if (typeof val === 'object' && val.id && val.id.toUpperCase() === cmd) {
+                    nextNodeId = val.id; 
+                    break;
                 }
             }
-
-            // Final fallback: if command string literally exists as a key or target in the node list 
-            let nextNodeName = null;
-            if (!choiceKey && (cmd in storyNodes)) nextNodeName= cmd; // direct navigation (nerd mode!)
             
-            // If no key matched but user typed "seal vents" etc try find via substrings
-            else if (!choiceKey && typeof(choicesObj) === 'object' ) {
-                Object.keys(choicesObj).some(k => {
-                    let val = choicesObj[k];
-                    let str = val.id?val.id:val;
-                    return str.toLowerCase().includes(cmd.toLowerCase());
-                })
+            if (nextNodeId && storyNodes[nextNodeId]) {
+                renderNode(nextNodeId);
+            } else {
+                printText(`>> UNRECOGNIZED COMMAND.\nVALIDATE INPUT AND RETRY.`);
             }
-
-            if (nextNodeName || choiceKey) {
-                const resolvedChoiceId = nextNodeName 
-                    ? nextNodeName
-                    : choicesObj[choiceKey] && choicesObj[choiceKey].id
-                        ? choicesObj[choiceKey].id 
-                        : choicesObj[choiceKey];
-                renderNode(resolvedChoiceId);
-            }
-            else {
-                printText(`UNRECOGNIZED COMMAND "${cmd}". SELECT [1], [2], OR TRY A FULL NODE ID.`);
-            }
+        } else {
+            if (!node.terminal) printText("SYSTEM STILL AWAITING INPUT...");
         }
     }
 
@@ -601,37 +553,51 @@
         createKeyNoiseBuffer();
         playHardwareSwitch();
 
-        screen.style.opacity = "0";
         screen.classList.remove('power-loss');
-
         setTimeout(() => {
             screen.classList.add('powered-on');
-            setTimeout(() => inputLine.style.display = 'flex', 800);
+        }, 50);
 
+        setTimeout(() => {
+            inputLine.style.display = 'flex';
+            
             if (localStorage.getItem('archimedes_save')) {
                 state = 'RESTORE_PROMPT';
-                printText("ATLAS PROTOCOL ONLINE. LOCAL CACHE DETECTED.\n[1] RESUME PREVIOUS OPERATION\n[2] WIPE CACHE AND RESTART\nINPUT TACTICAL CHOICE:");
+                printText("ATLAS PROTOCOL ONLINE.\nLOCAL CACHE DETECTED.\n[1] RESUME PREVIOUS OPERATION\n[2] WIPE CACHE AND RESTART\nINPUT TACTICAL CHOICE:");
             } else {
                 state = 'ACTIVE';
                 hudBar.style.display = 'flex';
-                
                 metrics.initialDiffusionRate = 10; 
                 updateHUD();
                 renderNode('INIT');
             }
-        }, 1750); // boot spool time for dramatic effect
+        }, 2200); 
     });
 
     inputField.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
-            handleInput(inputField.value.trim());
-        } else if (e.key !== 'Shift' && !e.ctrlKey && !e.altKey) {
+            let val = inputField.value.trim();
+            if (val !== '') handleInput(val);
+        } else if (e.key !== 'Shift' && !e.ctrlKey) {
             playKeyDown();
         }
     });
 
-    // --- AUDIO ENGINE ---
+    function playHardwareSwitch() {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.1);
+    }
 
     function startStaticNoise() {
         const bufferSize = audioCtx.sampleRate * 2; 
@@ -654,6 +620,23 @@
         filter.connect(staticGainNode);
         staticGainNode.connect(audioCtx.destination);
         noise.start();
+
+        if (hudDif) {
+            const observer = new MutationObserver(mutations => {
+                mutations.forEach(mutation => {
+                    const value = parseFloat(mutation.target.textContent.replace(/[^0-9.]/g, '') || 0);
+                    if (value > 6000 && !hudDif.classList.contains('stat-critical')) {
+                        staticGainNode.gain.rampToValueAtTime(0.0065, audioCtx.currentTime + 4); 
+                        screen.classList.add('alert-active');
+                    } else if (hudPwr.classList.contains('stat-critical') && hudO2.classList.contains('stat-critical')) {
+                        staticGainNode.gain.linearRampToValueAtTime(0.015, audioCtx.currentTime + 2);
+                    } else if (mutation.target.textContent.includes('±')) {
+                        staticGainNode.gain.rampToValueAtTime(0.003, audioCtx.currentTime + 5);
+                    }
+                });
+            });
+            observer.observe(hudDif, { childList: true, attributes: false, characterData: true });
+        }
     }
 
     function createKeyNoiseBuffer() {
@@ -666,123 +649,89 @@
     function playKeyDown() {
         if (!audioCtx || !keyNoiseBuffer) return;
         const t = audioCtx.currentTime;
-        
-        const variance = 0.3 + Math.random()*0.5; 
-        
         const source = audioCtx.createBufferSource();
         source.buffer = keyNoiseBuffer;
-
+        
+        const variance = 0.3 + Math.random()*0.5; 
         const filter = audioCtx.createBiquadFilter();
         filter.type = 'bandpass';
         filter.frequency.setValueAtTime(2400 * variance, t);
-        
-        let volMult = (metrics.pwr < 10) ? 0.5 : 1;
-        if (metrics.initialDiffusionRate > 50 && metrics.o2 < 60) volMult *= 2;
-
         const gain = audioCtx.createGain();
-        gain.gain.setValueAtTime(0.08 * volMult, t);
-        gain.gain.exponentialRampToValueAtTime(0.003, t + 0.05);
+        
+        let volumeScale = (metrics.pwr < 10) ? 0.5 : 1;
+        if (metrics.initialDiffusionRate > 100 && metrics.o2 < 60)
+            volumeScale *= 1.8; 
+
+        gain.gain.setValueAtTime(0.1 * volumeScale, t);
+        gain.gain.exponentialRampToValueAtTime(0.003, t + 0.03);
 
         source.connect(filter).connect(gain).connect(audioCtx.destination);
-        
         source.start(t);
-        source.stop(t + 0.07);
+        source.stop(t + 0.05);
     }
 
-    function printText(text, speed = 20, callback) {
+    function printText(text, speed = 25, callback) {
         isTyping = true;
         inputField.disabled = true;
-
+        
         const formattedText = String(text)
             .replace(/\n/g, '<br/>')
-            // Fix: proper escaping, and /g for all occurrences
-            .replace(/$(\d+)$\s*(.*)/g, `<br><span class="prompt-option">[$1] <span style="color:#6ee7f7">$2</span></span>`)
-        ;
-        
-        const writerLayer = document.createElement('div');
-        outputDiv.appendChild(writerLayer);
-        writerLayer.style.whiteSpace = 'pre-wrap'; 
+            .replace(/\[(\d+)\]\s*(.*)/g, `<br>[$1] <span style="font-size:1.5em; font-weight:bold">$2</span>`);
+
         let i = 0;
-        
-        function typeNext() {
+        const writerLayer = document.createElement('span');
+        outputDiv.appendChild(writerLayer);
+
+        function typewriteLoop() {
             if (i >= formattedText.length) {
                 isTyping = false;
                 inputField.disabled = false;
                 inputField.focus();
-
-                // No destructive cleanup needed anymore—append only
-                writerLayer.style.display = "block";
-                
-                callback && callback();
+                if (callback) callback();
                 return;
             }
             
-            const char = formattedText[i];
-
-            // Proper tag handling
-            if (char === '<') {
-                let tagContent = "";
-                while(i < formattedText.length && formattedText[i] !== '>') {
-                    tagContent += formattedText[i++];
+            if (formattedText[i] === '<') {
+                let tag = "";
+                while (i < formattedText.length && formattedText[i] !== '>') {
+                    tag += formattedText[i++];
                 }
-                if(formattedText[i] === '>')
-                    tagContent += formattedText[i++];
-
-                writerLayer.innerHTML += tagContent;
+                tag += '>';
+                writerLayer.innerHTML += tag;
             } else {
-                // text characters
-                const el = document.createTextNode(char);
-                writerLayer.appendChild(el);
-
-                // play sound only on visible chars
-                if (char !== ' ' && char !== '\t' && ![".",";",":","/"].includes(formattedText[i]))
-                    playKeyDown();
-
+                writerLayer.innerHTML += formattedText[i];
+                if (formattedText[i] !== " ") playKeyDown();
                 i++;
             }
             
             outputDiv.scrollTop = outputDiv.scrollHeight;
             
             let delay = speed;
-
-            // Slight pause after punctuation for rhythm
-            if(i > 1 && [".", ";", ":", "?", "!"].includes(formattedText[i-1]) )
-                delay += 70;
-            
-            setTimeout(typeNext, Math.max(delay, 5));
+            if (i > 0 && "<>.:,".includes(formattedText[i-1])) {
+                delay += 30;
+            }
+                
+            setTimeout(typewriteLoop, delay);
         }
-        
-        setTimeout(typeNext, speed);
+
+        setTimeout(typewriteLoop, speed);
     }
 
     function saveGame() {
-        const data = { 
-            currentNodeId,
-            metrics: Object.assign({}, metrics)
-        };
-        localStorage.setItem('archimedes_save', JSON.stringify(data));
+        localStorage.setItem('archimedes_save', JSON.stringify({ currentNodeId, metrics }));
     }
-
     function loadGame() {
-        try {
-            const savedData = JSON.parse(localStorage.getItem('archimedes_save'));
-            currentNodeId = savedData.currentNodeId || 'INIT';
-            // merge loaded state safely, ensuring any new metrics added get default fallbacks
-            Object.assign(metrics, savedData.metrics);
-            
-            hudBar.style.display = 'flex';
-            
-            printText(">> LOAD COMPLETE. SYSTEM VERIFIED.\nPHYSICS ENGINE REACTIVATED.\nATLAS SYS: READY FOR NEXT CHOICE.");
-        } catch(err) {
-            console.warn('save corrupted:', err.message);
-            alert("SAVE CORRUPTED—WILL BEGIN NEW RUN.");
-            deleteSave();
-            state = 'ACTIVE';
-            hudBar.style.display = 'flex';
-            renderNode('INIT');
+        const rawData = localStorage.getItem('archimedes_save');
+        if (rawData) {
+            const savedData = JSON.parse(rawData);
+            currentNodeId = savedData.currentNodeId;
+            metrics = savedData.metrics;
+            hudO2.innerText = `O₂: ${Math.round(metrics.o2)}%`;
+            updateHUD(); 
+            renderNode(currentNodeId);
         }
     }
-
+    
     function deleteSave() {
         localStorage.removeItem('archimedes_save');
     }
