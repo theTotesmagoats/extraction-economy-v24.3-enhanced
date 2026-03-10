@@ -287,7 +287,7 @@
     let state = 'OFF';
     let isTyping = false;
     
-    let audioCtx;
+    let audioCtx = null;
     let staticGainNode;
     let keyNoiseBuffer;
 
@@ -304,7 +304,6 @@
     };
 
     let currentNodeId = 'INIT';
-    let lastUpdateSecs = performance.now(); 
 
     const storyNodes = {
         'INIT': {
@@ -406,13 +405,10 @@
             hudDif.innerHTML = `DYNAMIC DIFF: <span class="hint-intuition" data-hint="${Math.round(safeDiff/10)} m/s gas flow">▼</span> ${diffStr}`;
         }
 
-        let crewStatus = metrics.crewAlive ? "STASIS/ACTIVE" : "EXPENDED";
         if (!metrics.crewAlive) hudO2.classList.add('stat-critical');
         
         if (metrics.pwr <= 30 || (typeof diff !== 'undefined' && diff > 8000)) hudPwr.classList.add('stat-critical');
         else hudPwr.classList.remove('stat-critical');
-
-        const hullClass = screen.parentElement.closest('#chassis').classList;
         
         if (metrics.pwr <= 10) {
             screen.style.boxShadow = 'inset 0 0 95px rgba(255, 60, 60, 0.3)';
@@ -432,7 +428,6 @@
         if (gasLeakSimulationHandle) clearInterval(gasLeakSimulationHandle);
         
         gasLeakSimulationHandle = setInterval(() => {
-            const now = performance.now();
             if (!screen.classList.contains('powered-on') || state !== 'ACTIVE') return;
             
             let lossPerSec = metrics.initialDiffusionRate / 1000; 
@@ -456,7 +451,6 @@
             if (gasLeakSimulationHandle) clearInterval(gasLeakSimulationHandle);
         }
 
-        // Process effect immediately if node has one
         if (typeof nodeRaw.effect === 'function') {
             nodeRaw.effect();
         }
@@ -545,13 +539,19 @@
 
     powerButton.addEventListener('click', () => {
         if (state !== 'OFF') return; 
-        
         powerButton.classList.add('active');
-        
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        startStaticNoise();
-        createKeyNoiseBuffer();
-        playHardwareSwitch();
+
+        // ISOLATION LAYER: Catch hardware audio exceptions that halt the thread.
+        try {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx) {
+                startStaticNoise();
+                createKeyNoiseBuffer();
+                playHardwareSwitch();
+            }
+        } catch (e) {
+            console.warn("ATLAS HARDWARE ERROR: Web Audio API blocked by environment.", e);
+        }
 
         screen.classList.remove('power-loss');
         setTimeout(() => {
@@ -561,7 +561,15 @@
         setTimeout(() => {
             inputLine.style.display = 'flex';
             
-            if (localStorage.getItem('archimedes_save')) {
+            // ISOLATION LAYER: Catch local cache exceptions when executing from restricted file paths.
+            let hasSave = false;
+            try {
+                hasSave = !!localStorage.getItem('archimedes_save');
+            } catch (e) {
+                console.warn("ATLAS CACHE ERROR: Local Storage restricted by environment.");
+            }
+
+            if (hasSave) {
                 state = 'RESTORE_PROMPT';
                 printText("ATLAS PROTOCOL ONLINE.\nLOCAL CACHE DETECTED.\n[1] RESUME PREVIOUS OPERATION\n[2] WIPE CACHE AND RESTART\nINPUT TACTICAL CHOICE:");
             } else {
@@ -600,7 +608,9 @@
     }
 
     function startStaticNoise() {
-        const bufferSize = audioCtx.sampleRate * 2; 
+        if (!audioCtx) return;
+        // Rigorous integer flooring to prevent Float exception crash.
+        const bufferSize = Math.floor(audioCtx.sampleRate * 2); 
         const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
         const data = buffer.getChannelData(0);
         for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
@@ -640,7 +650,9 @@
     }
 
     function createKeyNoiseBuffer() {
-        const bufferSize = audioCtx.sampleRate * 0.06; 
+        if (!audioCtx) return;
+        // Rigorous integer flooring to prevent DOMException on atypical sample rates.
+        const bufferSize = Math.floor(audioCtx.sampleRate * 0.06); 
         keyNoiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
         const output = keyNoiseBuffer.getChannelData(0);
         for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
@@ -698,6 +710,7 @@
                 }
                 tag += '>';
                 writerLayer.innerHTML += tag;
+                i++; // Advance parser past the closing bracket.
             } else {
                 writerLayer.innerHTML += formattedText[i];
                 if (formattedText[i] !== " ") playKeyDown();
@@ -718,24 +731,28 @@
     }
 
     function saveGame() {
-        localStorage.setItem('archimedes_save', JSON.stringify({ currentNodeId, metrics }));
+        try {
+            localStorage.setItem('archimedes_save', JSON.stringify({ currentNodeId, metrics }));
+        } catch(e) {}
     }
     function loadGame() {
-        const rawData = localStorage.getItem('archimedes_save');
-        if (rawData) {
-            const savedData = JSON.parse(rawData);
-            currentNodeId = savedData.currentNodeId;
-            metrics = savedData.metrics;
-            hudO2.innerText = `O₂: ${Math.round(metrics.o2)}%`;
-            updateHUD(); 
-            renderNode(currentNodeId);
-        }
+        try {
+            const rawData = localStorage.getItem('archimedes_save');
+            if (rawData) {
+                const savedData = JSON.parse(rawData);
+                currentNodeId = savedData.currentNodeId;
+                metrics = savedData.metrics;
+                hudO2.innerText = `O₂: ${Math.round(metrics.o2)}%`;
+                updateHUD(); 
+                renderNode(currentNodeId);
+            }
+        } catch(e) {}
     }
-    
     function deleteSave() {
-        localStorage.removeItem('archimedes_save');
+        try {
+            localStorage.removeItem('archimedes_save');
+        } catch(e) {}
     }
-
 </script>
 </body>
 </html>
