@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Terminal Mk V - Archimedes Base</title>
+    <title>Terminal Mk VI - Archimedes Base</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
@@ -305,9 +305,10 @@
 
     let currentNodeId = 'INIT';
 
+    // NARRATIVE DEPTH MATRIX
     const storyNodes = {
         'INIT': {
-            text: "LUNAR FACILITY ARCHIMEDES.\nKINETIC IMPACT DETECTED. SECTOR 4 DESTROYED.\nSYSTEM VELOCITY: CASCADING FAILURE.\n\nYOU ARE SEALED IN THE OVERSEER QUARTERS.\nATMOSPHERE IS VENTING THROUGH MICRO-FRACTURES IN THE BULKHEAD.\n\n[1] SEAL VENTS\n[2] HACK DOOR",
+            text: "LUNAR FACILITY ARCHIMEDES.\nKINETIC IMPACT DETECTED. SECTOR 4 DESTROYED.\nSYSTEM VELOCITY: CASCADING FAILURE.\n\nYOU ARE SEALED IN THE OVERSEER QUARTERS.\nATMOSPHERE IS VENTING THROUGH MICRO-FRACTURES IN THE BULKHEAD.\n\n[1] SEAL VENTS\n[2] HACK DOOR\n[3] ACCESS SECURITY LOGS",
             choices: {
                 '1': { 
                     id: 'SEAL_VENTS', 
@@ -324,7 +325,20 @@
                         return `> DOOR OPENS. \nSECOND ORDER PHYSICS:\nNO O₂ SEALING PERFORMED.\nPRESSURE DIFFERENTIAL STILL HIGH.\nGAS WILL CONTINUE ESCAPING.\n\n[1] FIX REACTOR RELAY\n[2] RESCUE CREWMATE`;
                     }
                 },
+                '3': {
+                    id: 'ACCESS_LOGS',
+                    effect: (node, currentMetrics) => {
+                        return `> CLEARANCE ACCEPTED.\nWARNING: MULTIPLE KINETIC STRIKES DETECTED FROM ORBITAL PLATFORM VANGUARD.\nTHIS WAS NOT A METEOR STRIKE. IT WAS A TARGETED PURGE.\n\n[1] SEAL VENTS\n[2] HACK DOOR`;
+                    }
+                }
             },
+        },
+        'ACCESS_LOGS': {
+            text: (currentMetrics) => storyNodes['INIT'].choices['3'].effect(null, currentMetrics),
+            choices: {
+                '1': 'SEAL_VENTS',
+                '2': 'HACK_DOOR'
+            }
         },
         'SEAL_VENTS': {
             text: (currentMetrics) => storyNodes['INIT'].choices['1'].effect(null, currentMetrics),
@@ -336,17 +350,30 @@
         },
         'DRAIN_CRYO': {
             effect: () => { metrics.pwr += 40; metrics.crewAlive = false; },
-            text: "FIRST ORDER EFFECT: LOCAL GRID RESTORED. DOOR UNLOCKED.\nSECOND ORDER PHYSICS:\nCRYOGENIC FLUID VAPORIZATION SPILLS INTO CORRIDORS—\nRISK OF CONDENSATION ON OPTICS.\n\n[1] MANUAL AIRLOCK OVERRIDE (HIGH RISK)\n[2] RE-WIRE COMMS ARRAY",
-            choices: { '1': 'MANUAL_AIRLOCK', '2': 'REWIRE_COMMS' }
+            text: "FIRST ORDER EFFECT: LOCAL GRID RESTORED. DOOR UNLOCKED.\nSECOND ORDER PHYSICS:\nCRYOGENIC FLUID VAPORIZATION SPILLS INTO CORRIDORS—\nRISK OF CONDENSATION ON OPTICS.\n\n[1] MANUAL AIRLOCK OVERRIDE (HIGH RISK)\n[2] ROUTE POWER TO COMMS ARRAY",
+            choices: { '1': 'MANUAL_AIRLOCK', '2': 'ROUTE_COMMS' }
+        },
+        'ROUTE_COMMS': {
+            effect: () => { metrics.pwr -= 20; },
+            text: "COMMS TRUNK RESTORED. UPLINK TO SURFACE ESTABLISHED.\nORBITAL PLATFORM VANGUARD REQUESTS AUTHENTICATION VERIFICATION.\n\n[1] TRANSMIT ATLAS CODES\n[2] TRANSMIT SOS IN THE CLEAR",
+            choices: { '1': 'AI_UPLINK', '2': 'REWIRE_COMMS' }
         },
         'OVERRIDE_AI': {
             effect: () => { metrics.pwr += 60; metrics.aiCoreActive = false; },
-            text: "FIRST ORDER EFFECT: POWER SURGE RESTORES DOOR.\nSECOND ORDER PHYSICS:\nREACTOR COOLANT LOOP PULSES—\nTEMP VELOCITY: RISING. CORE STRESS NOT YET CRITICAL.\n\n[1] LAUNCH POD (NO NAV)\n[2] MANUAL SCRAM",
+            text: "FIRST ORDER EFFECT: POWER SURGE RESTORES DOOR.\nSECOND ORDER PHYSICS:\nREACTOR COOLANT LOOP PULSES—\nTEMP VELOCITY: RISING. CORE STRESS NOT YET CRITICAL.\n\n[1] LAUNCH POD (NO NAV)\n[2] INITIATE MANUAL SCRAM",
             choices: { '1': 'BLIND_LAUNCH', '2': 'MANUAL_SCRAM' }
+        },
+        'MANUAL_SCRAM': {
+            text: "CORE TEMP STABILIZING. SECONDARY SYSTEMS COMING ONLINE.\nHANGAR BAY 2 REPORTS INTACT SHUTTLE. FLIGHT SYSTEMS DORMANT.\n\n[1] PROCEED TO HANGAR 2\n[2] ATTEMPT REACTOR COLD RESTART",
+            choices: { '1': 'HANGAR_BAY', '2': 'COLD_RESTART_FAIL' }
+        },
+        'HANGAR_BAY': {
+            text: "HANGAR SECURED. SHUTTLE REQUIRES IGNITION OVERRIDE.\n\n[1] HOTWIRE CONSOLE\n[2] INITIATE AI UPLINK",
+            choices: { '1': 'HOTWIRE', '2': 'AI_UPLINK' }
         },
         'FIX_RELAY': {
             effect: () => { metrics.crewAlive = false; },
-            text: "FIRST ORDER EFFECT: RADIATION CONTAINED.\nSECOND ORDER PHYSICS:\nMAGNETIC FLUX CHANGES—COMPASS CALIBRATION OFF.\nCREWMATE NOT SAVED.\n\nHANGAR: SHUTTLE INTACT. IGNITION REQUIRES ENGINEERING CLEARANCE OR AI UPLINK.",
+            text: "FIRST ORDER EFFECT: RADIATION CONTAINED.\nSECOND ORDER PHYSICS:\nMAGNETIC FLUX CHANGES—COMPASS CALIBRATION OFF.\nCREWMATE NOT SAVED.\n\nHANGAR: SHUTTLE INTACT. IGNITION REQUIRES ENGINEERING CLEARANCE OR AI UPLINK.\n\n[1] HOTWIRE SHUTTLE\n[2] INITIATE AI UPLINK",
             choices: { '1': 'HOTWIRE', '2': 'AI_UPLINK' }
         },
         'RESCUE_CREW': {
@@ -355,32 +382,33 @@
             choices: { '1': 'SECONDARY_PODS', '2': 'RAD_DASH' }
         },
         
+        // TERMINAL NODES
         'MANUAL_AIRLOCK': {
             text: "END OF LINE.\nWITHOUT BIOMETRICS OR AI ASSISTANCE, THE AIRLOCK FAILS. \nTHE CYCLING SEQUENCE TRIGGERS A SAFETY LOCKOUT.\n\nCRITICAL FAILURE IDENTIFIED:\nLACK OF SYSTEM COHERENCE — OPERATIONAL CHOICE IGNORED HUMAN RESOURCE INTEGRITY.",
             terminal: true
         },
         'REWIRE_COMMS': {
-            text: "END OF LINE.\nCOMMS TRUNK SEVERED. NO PATHS TO SURFACE ANTENNA.\nOXYGEN LEVELS FALLING. YOUR FINAL TRANSMISSION IS A STATIC SIGH.\n\nCRITICAL FAILURE IDENTIFIED:\nIGNORING HARDWARE DEGRADATION—GAS LEAKAGE ≠ CABLE FAILURE.",
+            text: "END OF LINE.\nSOS INTERCEPTED. VANGUARD PLATFORM IDENTIFIES YOUR SURVIVAL AS AN ANOMALY.\nA SECONDARY KINETIC STRIKE OBLITERATES THE SECTOR.\n\nCRITICAL FAILURE IDENTIFIED:\nIGNORING CONTEXT. THEY DID NOT MISS. THEY WERE AIMING AT YOU.",
             terminal: true
         },
         'BLIND_LAUNCH': {
             text: "END OF LINE.\nPOD THRUSTS STRAIGHT UP. GRAVITY FIELD TAPERING NOT ACCOUNTED FOR.\nPITCH ROTATES — THROTTLE JITTER—THE POD SKIPS INTO VOID.\n\nCRITICAL FAILURE IDENTIFIED:\nMISSING SECONDARY PHYSICS—ATMOSPHERIC SHEAR IN ESTIMATES.",
             terminal: true
         },
-        'MANUAL_SCRAM': {
-            text: "END OF LINE.\nCORE TEMP IS ALREADY AT PSEUDO-EQUILIBRIUM. ROD insertion delays COOLANT surge by <20 ms—\nHEAT RAPIDLY OVERRUNS SAFE THRESHOLD.\n\nCRITICAL FAILURE IDENTIFIED:\nNOTICING EXPONENTIAL TEMPERATURE VELOCITY — AND CHOOSING NOT TO TRUST IT.",
+        'COLD_RESTART_FAIL': {
+            text: "END OF LINE.\nCORE TEMP IS ALREADY AT PSEUDO-EQUILIBRIUM. ROD INSERTION DELAYS COOLANT SURGE.\nHEAT RAPIDLY OVERRUNS SAFE THRESHOLD.\n\nCRITICAL FAILURE IDENTIFIED:\nNOTICING EXPONENTIAL TEMPERATURE VELOCITY — AND CHOOSING NOT TO TRUST IT.",
             terminal: true
         },
         'HOTWIRE': {
-            text: "END OF LINE.\nPUSH-BUTTON HOT-WIRE Bypasses Anti-theft ICs. SYSTEM LOCKDOWN.\nO₂ CONSUMED AT ~9.5 L/HR IN STASIS.\nYOU DRAIN IT TO 3% BEFORE THE ALARM EVEN SOUNDS.\n\nCRITICAL FAILURE IDENTIFIED:\nHARDWARE HONESTY — YOU DIDN'T ASK “WILL IT WORK?”\nYOU ASKED, “HOW MANY FAILURES DOES THIS COST?”",
+            text: "END OF LINE.\nPUSH-BUTTON HOT-WIRE BYPASSES ANTI-THEFT ICS. SYSTEM LOCKDOWN.\nO₂ CONSUMED AT ~9.5 L/HR IN STASIS.\nYOU DRAIN IT TO 3% BEFORE THE ALARM EVEN SOUNDS.\n\nCRITICAL FAILURE IDENTIFIED:\nHARDWARE HONESTY — YOU DIDN'T ASK “WILL IT WORK?”\nYOU ASKED, “HOW MANY FAILURES DOES THIS COST?”",
             terminal: true
         },
         'AI_UPLINK': {
-            text: "SURVIVAL SECURED.\nATLAS AI UPLINK SUCCEEDS. SHUTTLE INTEGRITY CHECKS COMPLETE.\n\nNOTE:\nPHYSICS MODEL USED TO TRAJECTORY-SKIP EARTH GRAVITY SLINGSHOT.\nYOU LAND NEAR KENNEDY SPACE CENTER.\nALL CREW EXPENDED—BUT SYSTEMS SURVIVED.\nLOGICAL. RATIONAL. FINAL.",
+            text: "SURVIVAL SECURED.\nATLAS AI UPLINK SUCCEEDS. PLATFORM VANGUARD ACCEPTS OVERRIDE CODES.\n\nNOTE:\nPHYSICS MODEL USED TO TRAJECTORY-SKIP EARTH GRAVITY SLINGSHOT.\nYOU LAND NEAR KENNEDY SPACE CENTER.\nALL CREW EXPENDED—BUT SYSTEMS SURVIVED.\nLOGICAL. RATIONAL. FINAL.",
             terminal: true
         },
         'SECONDARY_PODS': {
-            text: "SURVIVAL SECURED.\nYOU AND CREWMATE REACH SECONDARY POD.\nENGINEERING CODES BYPASS THE LOCKDOWN.\nO₂ CONSERVED DURING DEPRESSURIZATION—GAS FLOWS AT ~12 m/s\n(That's the speed of a Formula 1 car in your suit vents!)\nYOU LAUNCH.\n\nNOTE:\nBEST OUTCOME FOUND—USING *HUMAN* FLEXIBILITY, NOT MACHINE RIGIDITY.",
+            text: "SURVIVAL SECURED.\nYOU AND CREWMATE REACH SECONDARY POD.\nENGINEERING CODES BYPASS THE LOCKDOWN.\nO₂ CONSERVED DURING DEPRESSURIZATION—GAS FLOWS AT ~12 m/s\n(That's the speed of a Formula 1 car in your suit vents!)\nYOU LAUNCH.\n\nNOTE:\nBEST OUTCOME FOUND—USING HUMAN FLEXIBILITY, NOT MACHINE RIGIDITY.",
             terminal: true
         },
         'RAD_DASH': {
@@ -393,7 +421,7 @@
         hudO2.innerText = `O₂: ${Math.round(metrics.o2)}%`;
         hudPwr.innerText = `PWR: ${Math.round(metrics.pwr)}%`;
 
-        let safeDiff = 0; // Flattened scope to prevent global ReferenceError
+        let safeDiff = 0;
 
         if (!diff || diff == null || isNaN(diff)) {
             hudDif.innerHTML = `DYNAMIC DIFF: <span class="hint-intuition" data-hint="Pressure differential, in Pa">?</span>? PA`;
@@ -489,13 +517,34 @@
         const cmd = sanitizedRaw.trim().toUpperCase();
         if (cmd.length < 1) return;
 
-        // Isolated DOM Append prevents innerHTML reflow tearing
+        // Isolate DOM Append to prevent innerHTML reflow tearing
         const echoSpan = document.createElement('span');
         echoSpan.style.color = '#e0e0e0';
         echoSpan.innerHTML = `> ${cmd}<br>`;
         outputDiv.appendChild(echoSpan);
         
         inputField.value = '';
+
+        // TACTICAL HELP MATRIX
+        if (cmd === 'HELP' || cmd === '?') {
+            let helpText = "\n>> COMMAND ASSISTANCE PROTOCOL ACTIVE:\n";
+            if (state === 'RESTORE_PROMPT') {
+                helpText += "AVAILABLE CORE DIRECTIVES:\n[1] RESUME PREVIOUS OPERATION\n[2] WIPE CACHE AND RESTART\n";
+            } else {
+                const node = storyNodes[currentNodeId];
+                if (node.choices) {
+                    helpText += "VALID LOGICAL INPUTS DETECTED FOR CURRENT SECTOR:\n";
+                    for (const [key, val] of Object.entries(node.choices)) {
+                        let actionName = typeof val === 'object' ? val.id : val;
+                        helpText += `[${key}] EXECUTE ${actionName.replace(/_/g, ' ')}\n`;
+                    }
+                } else if (node.terminal) {
+                    helpText += "SYSTEM HALTED. NO FURTHER INPUTS ACCEPTED.\n";
+                }
+            }
+            printText(helpText, 15); // Print help slightly faster
+            return;
+        }
 
         if (state === 'RESTORE_PROMPT') {
             if (cmd === '1') {
@@ -510,7 +559,7 @@
                 updateHUD();
                 renderNode('INIT');
             } else {
-                printText(">> INVALID ENTRY. [1] RESUME OR [2] WIPE CACHE:");
+                printText(">> INVALID ENTRY. [1] RESUME OR [2] WIPE CACHE:\n>> (TYPE 'HELP' FOR ASSISTANCE)");
             }
             return;
         }
@@ -535,10 +584,10 @@
             if (nextNodeId && storyNodes[nextNodeId]) {
                 renderNode(nextNodeId);
             } else {
-                printText(`>> UNRECOGNIZED COMMAND.\nVALIDATE INPUT AND RETRY.`);
+                printText(`>> UNRECOGNIZED COMMAND. VALIDATE INPUT AND RETRY.\n>> (TYPE 'HELP' FOR ASSISTANCE)`);
             }
         } else {
-            if (!node.terminal) printText("SYSTEM STILL AWAITING INPUT...");
+            if (!node.terminal) printText("SYSTEM STILL AWAITING EXTERNAL EVENT...");
         }
     }
 
@@ -546,9 +595,14 @@
         if (state !== 'OFF') return; 
         powerButton.classList.add('active');
 
+        // ISOLATION LAYER: Catch hardware audio exceptions
         try {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (audioCtx) {
+                // EXPLICIT RESUME: Defeat Chromium 117+ autoplay sandbox
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
                 startStaticNoise();
                 createKeyNoiseBuffer();
                 playHardwareSwitch();
@@ -558,9 +612,8 @@
         }
 
         screen.classList.remove('power-loss');
-        setTimeout(() => {
-            screen.classList.add('powered-on');
-        }, 50);
+        void screen.offsetWidth; // SYNCHRONOUS DOM REFLOW: Guarantees transition hook executes
+        screen.classList.add('powered-on');
 
         setTimeout(() => {
             inputLine.style.display = 'flex';
@@ -583,6 +636,7 @@
         }, 2200); 
     });
 
+    // Native Numerical Capture & Standard Enter Handler
     inputField.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -681,6 +735,7 @@
         source.stop(t + 0.05);
     }
 
+    // RIGOROUS TYPEWRITER LOOP
     function printText(text, speed = 25, callback) {
         isTyping = true;
         inputField.disabled = true;
@@ -708,8 +763,8 @@
                     tag += formattedText[i++];
                 }
                 tag += '>';
+                i++; // Advance directly past the closing bracket
                 writerLayer.innerHTML += tag;
-                i++; 
             } else {
                 writerLayer.innerHTML += formattedText[i];
                 if (formattedText[i] !== " ") playKeyDown();
@@ -719,7 +774,7 @@
             outputDiv.scrollTop = outputDiv.scrollHeight;
             
             let delay = speed;
-            if (i > 0 && "<>.:,".includes(formattedText[i-1])) {
+            if (i > 0 && i < formattedText.length && "<>.:,".includes(formattedText[i-1])) {
                 delay += 30;
             }
                 
