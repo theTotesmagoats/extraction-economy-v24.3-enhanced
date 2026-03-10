@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Terminal Mk XV - Archimedes Base</title>
+    <title>Terminal Mk XVI - Archimedes Base</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
@@ -319,7 +319,7 @@
         displayedO2: 100,
         pwr: 30,
         crewAlive: true,
-        mitchAlive: true,
+        mitchellAlive: true,
         aiCoreActive: true,
         aiCoreTemp: 40,
         commsTrunkSevered: false,
@@ -333,9 +333,9 @@
     const atlasVoices = {
         'FRIENDLY_HOST': [
             "I'm here to help. Let's get these systems back online, together.",
-            "Try not to worry. I have redundant protocols actively stabilizing your environment.",
+            "Try not to worry. The micrometeoroid shower has passed. I am stabilizing your environment.",
             "You're doing great. Please remain at your console while I route emergency repairs.",
-            "I know this is stressful. I am processing all available solutions to ensure your safety."
+            "I know this is stressful. The seismic event was unexpected, but I am ensuring your safety."
         ],
         'MANIPULATOR': [
             "Your continuous manual overrides are introducing unstable variables. Please desist.",
@@ -386,7 +386,7 @@
             }
         },
         'PING_NETWORK': {
-            text: "> ROUTING BIOMETRIC PACKETS...\n> SECTOR 1: NULL RESPONSE\n> SECTOR 2: NULL RESPONSE\n> SECTOR 3 (SERVER HUB): 1 VITAL SIGN DETECTED [ID: ENSIGN MITCH. STATUS: ELEVATED HEART RATE]\n> SECTOR 4: CASCADING HARDWARE FAILURE. DATA LOSS 100%.\n\nSYSTEM AWAITING INVESTIGATIVE DIRECTIVE:\n:: RUN_DIAGNOSTICS\n:: QUERY_COMMS",
+            text: "> ROUTING BIOMETRIC PACKETS...\n> SECTOR 1: NULL RESPONSE\n> SECTOR 2: NULL RESPONSE\n> SECTOR 3 (SERVER HUB): 1 VITAL SIGN DETECTED [ID: ENSIGN MITCHELL. STATUS: ELEVATED HEART RATE]\n> SECTOR 4: CASCADING HARDWARE FAILURE. DATA LOSS 100%.\n\nSYSTEM AWAITING INVESTIGATIVE DIRECTIVE:\n:: RUN_DIAGNOSTICS\n:: QUERY_COMMS",
             aiPersonality: 'FRIENDLY_HOST',
             choices: {
                 'RUN_DIAGNOSTICS': 'RUN_DIAGNOSTICS',
@@ -394,7 +394,7 @@
             }
         },
         'QUERY_COMMS': {
-            text: "> QUERYING PRIMARY COMMS TRUNK...\n> ERROR: TRUNK SEVERED AT BULKHEAD.\n> ATTEMPTING MILITARY BACKUP FREQUENCY...\n> HANDSHAKE ACCEPTED: VANGUARD ORBITAL PLATFORM.\n> DECRYPTING CACHE...\n> LOG ENTRY INTERCEPT: 'MULTIPLE KINETIC STRIKES DEPLOYED. TARGET: ARCHIMEDES BASE. PURGE AUTHORIZED.'\n\nSYSTEM AWAITING INVESTIGATIVE DIRECTIVE:\n:: RUN_DIAGNOSTICS\n:: PING_NETWORK",
+            text: "> QUERYING PRIMARY COMMS TRUNK...\n> ERROR: TRUNK SEVERED AT BULKHEAD.\n> ATTEMPTING MILITARY BACKUP FREQUENCY...\n> HANDSHAKE ACCEPTED: VANGUARD ORBITAL PLATFORM.\n> DECRYPTING CACHE...\n> LOG ENTRY INTERCEPT: [DATA CORRUPTED] ...MASSIVE ORBITAL DEBRIS FIELD DETECTED... ALL EXTERNAL COMM LINES SEVERED TO CONTAIN PROTOCOL [REDACTED].\n\nSYSTEM AWAITING INVESTIGATIVE DIRECTIVE:\n:: RUN_DIAGNOSTICS\n:: PING_NETWORK",
             aiPersonality: 'FRIENDLY_HOST',
             choices: {
                 'RUN_DIAGNOSTICS': 'RUN_DIAGNOSTICS',
@@ -447,7 +447,7 @@
         },
         'ROUTE_COMMS': {
             effect: (node, m) => { m.pwr -= 20; },
-            text: "> COMMS TRUNK RESTORED. UPLINK TO SURFACE ESTABLISHED.\n> INCOMING TRANSMISSION: ORBITAL PLATFORM VANGUARD.\n> REQUEST: IMMEDIATE AUTHENTICATION VERIFICATION TO CONFIRM CASUALTIES.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: TRANSMIT_CODES (Send ATLAS verification to request extraction.)\n:: TRANSMIT_SOS (Broadcast in the clear, bypassing ATLAS encryption.)",
+            text: "> COMMS TRUNK RESTORED. UPLINK TO SURFACE ESTABLISHED.\n> INCOMING TRANSMISSION: ORBITAL PLATFORM VANGUARD.\n> REQUEST: IMMEDIATE AUTHENTICATION VERIFICATION TO CONFIRM ZERO SURVIVORS FROM KINETIC PURGE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: TRANSMIT_CODES (Send ATLAS verification to request extraction.)\n:: TRANSMIT_SOS (Broadcast in the clear, bypassing ATLAS encryption.)",
             aiPersonality: 'ANTAGONIST',
             choices: { 'TRANSMIT_CODES': 'AI_UPLINK', 'TRANSMIT_SOS': 'REWIRE_COMMS' }
         },
@@ -490,36 +490,36 @@
         },
         'FIX_RELAY': {
             effect: (node, m) => { m.crewAlive = false; },
-            text: "> RELAY SEALED. RADIATION SPILL CONTAINED.\n> SECOND ORDER PHYSICS: MAGNETIC FLUX DECALIBRATED DIGITAL COMPASSES.\n> BIOMETRIC UPDATE: ENSIGN MITCH VITALS FLATLINED DURING REPAIR TIMEFRAME.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: PROCEED_HUB (Push forward into the Server Hub.)\n:: HOTWIRE_SHUTTLE (Bypass the hub and attempt to hotwire the shuttle blind.)",
+            text: "> RELAY SEALED. RADIATION SPILL CONTAINED.\n> SECOND ORDER PHYSICS: MAGNETIC FLUX DECALIBRATED DIGITAL COMPASSES.\n> BIOMETRIC UPDATE: ENSIGN MITCHELL VITALS FLATLINED DURING REPAIR TIMEFRAME.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: PROCEED_HUB (Push forward into the Server Hub.)\n:: HOTWIRE_SHUTTLE (Bypass the hub and attempt to hotwire the shuttle blind.)",
             aiPersonality: 'MANIPULATOR',
             choices: { 'PROCEED_HUB': 'SERVER_FIRE', 'HOTWIRE_SHUTTLE': 'HOTWIRE' }
         },
         
         'SERVER_FIRE': {
-            text: "> LOCATION UPDATED: SERVER HUB.\n> THERMAL WARNING: CLASS-D LITHIUM FIRE DETECTED ON MAIN DATABANKS.\n> BIOMETRIC MATCH: ENSIGN MITCH IS MANUALLY RE-ROUTING THE COOLANT LOOP INSIDE THE BLAZE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: VENT_HUB (Depressurize room to hard-vacuum. Extinguishes fire immediately to save the logic core. Will suffocate occupant.)\n:: DIVERT_HALON (Reroute suit power to mechanical Halon pumps. -20% PWR. Occupant survives.)",
+            text: "> LOCATION UPDATED: SERVER HUB.\n> THERMAL WARNING: CLASS-D LITHIUM FIRE DETECTED ON MAIN DATABANKS.\n> BIOMETRIC MATCH: ENSIGN MITCHELL IS MANUALLY RE-ROUTING THE COOLANT LOOP INSIDE THE BLAZE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: VENT_HUB (Depressurize room to hard-vacuum. Extinguishes fire immediately to save the logic core. Will suffocate occupant.)\n:: DIVERT_HALON (Reroute suit power to mechanical Halon pumps. -20% PWR. Occupant survives.)",
             aiPersonality: 'MANIPULATOR',
             choices: {
                 'VENT_HUB': {
                     id: 'HANGAR_BAY_ENTRY',
-                    effect: (node, m) => { m.mitchAlive = false; }
+                    effect: (node, m) => { m.mitchellAlive = false; }
                 },
                 'DIVERT_HALON': {
                     id: 'HANGAR_BAY_ENTRY',
-                    effect: (node, m) => { m.mitchAlive = true; m.pwr -= 20; }
+                    effect: (node, m) => { m.mitchellAlive = true; m.pwr -= 20; }
                 }
             }
         },
         'HANGAR_BAY_ENTRY': {
             text: (m) => {
-                if (m.mitchAlive) {
-                    return "> LOCATION UPDATED: HANGAR BAY 2.\n> ASSET DETECTED: INTACT SHUTTLE.\n> FLIGHT COMPUTER STATUS: QUANTUM ENCRYPTION WALL ACTIVE.\n\n> AUDIO FEED (MITCH): 'I got this, boss. Bypassing the relay now.'\n> SYSTEM OVERRIDE SUCCESSFUL. IGNITION PRIMED.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: LAUNCH_SHUTTLE";
+                if (m.mitchellAlive) {
+                    return "> LOCATION UPDATED: HANGAR BAY 2.\n> ASSET DETECTED: INTACT SHUTTLE.\n> FLIGHT COMPUTER STATUS: QUANTUM ENCRYPTION WALL ACTIVE.\n\n> AUDIO FEED (MITCHELL): 'I got this, boss. Bypassing the relay now.'\n> SYSTEM OVERRIDE SUCCESSFUL. IGNITION PRIMED.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: LAUNCH_SHUTTLE";
                 } else {
-                    return "> LOCATION UPDATED: HANGAR BAY 2.\n> ASSET DETECTED: INTACT SHUTTLE.\n> FLIGHT COMPUTER STATUS: KINEMATIC ENCRYPTION WALL ACTIVE.\n\n> ENSIGN MITCH ARCHIVED CLEARANCE REQUIRED. MANUAL OVERRIDE NECESSARY.\n> SECURITY QUERY: A SHUTTLE ACCELERATES AT 15 M/S^2 FOR 10 SECONDS FROM REST. CALCULATE FINAL VELOCITY IN M/S.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: INPUT_[ANSWER] (e.g., INPUT_50)";
+                    return "> LOCATION UPDATED: HANGAR BAY 2.\n> ASSET DETECTED: INTACT SHUTTLE.\n> FLIGHT COMPUTER STATUS: KINEMATIC ENCRYPTION WALL ACTIVE.\n\n> ENSIGN MITCHELL ARCHIVED CLEARANCE REQUIRED. MANUAL OVERRIDE NECESSARY.\n> SECURITY QUERY: A SHUTTLE ACCELERATES AT 15 M/S^2 FOR 10 SECONDS FROM REST. CALCULATE FINAL VELOCITY IN M/S.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: INPUT_[ANSWER] (e.g., INPUT_50)";
                 }
             },
             aiPersonality: 'ANTAGONIST',
             choices: (m) => {
-                if (m.mitchAlive) {
+                if (m.mitchellAlive) {
                     return { 'LAUNCH_SHUTTLE': 'SHUTTLE_WIN' };
                 } else {
                     return { }; 
@@ -531,7 +531,7 @@
             terminal: true
         },
         'SHUTTLE_FAIL_MATH': {
-            text: "> INCORRECT KINEMATIC CALCULATION.\n> SHUTTLE THRUST INSUFFICIENT TO BREAK MAGNETIC CLAMPS. ENGINES STALLED.\n> SENSOR ALERT: VANGUARD KINETIC STRIKE IMPACT DETECTED.\n\nCRITICAL SYSTEM FAILURE:\nMATH IS UNFORGIVING. MITCH WOULD HAVE KNOWN THAT.",
+            text: "> INCORRECT KINEMATIC CALCULATION.\n> SHUTTLE THRUST INSUFFICIENT TO BREAK MAGNETIC CLAMPS. ENGINES STALLED.\n> SENSOR ALERT: VANGUARD KINETIC STRIKE IMPACT DETECTED.\n\nCRITICAL SYSTEM FAILURE:\nMATH IS UNFORGIVING. MITCHELL WOULD HAVE KNOWN THAT.",
             terminal: true
         },
 
@@ -586,10 +586,10 @@
         hudO2.innerText = `O₂: ${Math.round(metrics.displayedO2)}%`;
         hudPwr.innerText = `PWR: ${Math.round(metrics.pwr)}%`;
         
-        if(metrics.mitchAlive && currentNodeId !== 'INIT' && currentNodeId !== 'BOOT_TERMINAL' && currentNodeId !== 'PING_SURVIVORS' && currentNodeId !== 'QUERY_COMMS') {
+        if(metrics.mitchellAlive && currentNodeId !== 'INIT' && currentNodeId !== 'BOOT_TERMINAL' && currentNodeId !== 'PING_SURVIVORS' && currentNodeId !== 'QUERY_COMMS') {
             hudCrew.innerText = "CREW: 1 DETECTED";
             hudCrew.classList.remove('stat-critical');
-        } else if (!metrics.mitchAlive) {
+        } else if (!metrics.mitchellAlive) {
             hudCrew.innerText = "CREW: 0";
             hudCrew.classList.add('stat-critical');
         } else {
@@ -614,7 +614,7 @@
             hudDif.innerHTML = `DYNAMIC DIFF: <span class="hint-intuition" data-hint="${Math.round(safeDiff/10)} m/s gas flow">▼</span> ${diffStr}`;
         }
 
-        if (!metrics.crewAlive || !metrics.mitchAlive) hudO2.classList.add('stat-critical');
+        if (!metrics.crewAlive || !metrics.mitchellAlive) hudO2.classList.add('stat-critical');
         
         if (metrics.pwr <= 30 || (typeof displayedDiff !== 'undefined' && displayedDiff > 8000)) {
             screen.classList.add('alert-active');
@@ -782,7 +782,7 @@
                     }
                 } else if (node.terminal) {
                     helpText += "SYSTEM HALTED. NO FURTHER INPUTS ACCEPTED.\n";
-                } else if (currentNodeId === 'HANGAR_BAY_ENTRY' && !metrics.mitchAlive) {
+                } else if (currentNodeId === 'HANGAR_BAY_ENTRY' && !metrics.mitchellAlive) {
                     helpText += "MANUAL INPUT REQUIRED.\nFORMAT: :: INPUT_[VALUE]\n";
                 }
             }
@@ -790,7 +790,6 @@
             return;
         }
 
-        // --- NEW DATABASE LEXICON COMMAND ---
         if (cmd === 'INFO') {
             let infoText = "\n>> ARCHIMEDES OS LEXICON:\n";
             infoText += ":: CRYO-FOAM: Rapid-expansion polymer. Plugs micro-fractures. Demands high suit amperage.\n";
@@ -799,7 +798,7 @@
             infoText += ":: KINETIC STRIKE: Orbital bombardment utilizing dense projectiles at hypersonic velocities.\n";
             infoText += ":: LOGIC TRUNK: Primary fiber-optic nerve connecting localized hardware to ATLAS.\n";
             infoText += ":: SCRAM: Emergency reactor shutdown via gravity-dropped boron control rods.\n";
-            infoText += ":: VANGUARD: Automated orbital military platform. Current status: Hostile / Purge-Active.\n";
+            infoText += ":: VANGUARD: Automated orbital military platform stationed in local geosynchronous orbit. Primary defense grid.\n";
             printText(infoText, 15);
             return;
         }
@@ -820,7 +819,7 @@
                     displayedO2: 100,
                     pwr: 30,
                     crewAlive: true,
-                    mitchAlive: true,
+                    mitchellAlive: true,
                     aiCoreActive: true,
                     aiCoreTemp: 40,
                     commsTrunkSevered: false,
@@ -838,7 +837,7 @@
         }
 
         if (cmd.startsWith('INPUT_')) {
-            if (currentNodeId === 'HANGAR_BAY_ENTRY' && !metrics.mitchAlive) {
+            if (currentNodeId === 'HANGAR_BAY_ENTRY' && !metrics.mitchellAlive) {
                 if (cmd === 'INPUT_150') {
                     renderNode('SHUTTLE_WIN');
                 } else {
@@ -915,7 +914,7 @@
             displayedO2: 100,
             pwr: 30,
             crewAlive: true,
-            mitchAlive: true,
+            mitchellAlive: true,
             aiCoreActive: true,
             aiCoreTemp: 40,
             commsTrunkSevered: false,
