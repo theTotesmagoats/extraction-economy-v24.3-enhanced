@@ -307,7 +307,7 @@
 
     const storyNodes = {
         'INIT': {
-            text: "LUNAR FACILITY ARCHIMEDES.\nKINETIC IMPACT DETECTED. SECTOR 4 DESTROYED.\nSYSTEM VELOCITY: CASCADING FAILURE.\n\nYOU ARE SEALED IN THE OVERSEER QUARTERS.\nATMOSPHERE IS VENTING THROUGH MICRO-FRACTURES IN THE BULKHEAD.",
+            text: "LUNAR FACILITY ARCHIMEDES.\nKINETIC IMPACT DETECTED. SECTOR 4 DESTROYED.\nSYSTEM VELOCITY: CASCADING FAILURE.\n\nYOU ARE SEALED IN THE OVERSEER QUARTERS.\nATMOSPHERE IS VENTING THROUGH MICRO-FRACTURES IN THE BULKHEAD.\n\n[1] SEAL VENTS\n[2] HACK DOOR",
             choices: {
                 '1': { 
                     id: 'SEAL_VENTS', 
@@ -393,10 +393,12 @@
         hudO2.innerText = `O₂: ${Math.round(metrics.o2)}%`;
         hudPwr.innerText = `PWR: ${Math.round(metrics.pwr)}%`;
 
+        let safeDiff = 0; // Flattened scope to prevent global ReferenceError
+
         if (!diff || diff == null || isNaN(diff)) {
             hudDif.innerHTML = `DYNAMIC DIFF: <span class="hint-intuition" data-hint="Pressure differential, in Pa">?</span>? PA`;
         } else {
-            const safeDiff = Math.abs(Math.round(diff));
+            safeDiff = Math.abs(Math.round(diff));
             let diffStr = '';
             if (safeDiff > 10000) diffStr = `<span style="color:#f34">+${safeDiff} PA</span>`; 
             else if (safeDiff > 5000) diffStr = `+${safeDiff} PA`;
@@ -430,16 +432,14 @@
         gasLeakSimulationHandle = setInterval(() => {
             if (!screen.classList.contains('powered-on') || state !== 'ACTIVE') return;
             
-            let lossPerSec = metrics.initialDiffusionRate / 1000; 
-            
-            if (metrics.commsTrunkSevered) {
-                lossPerSec += 0.15;
-            }
+            let lossPerSec = metrics.initialDiffusionRate / 100; 
+            if (metrics.commsTrunkSevered) lossPerSec += 0.12; 
 
-            metrics.o2 -= lossPerSec; 
+            metrics.o2 -= (lossPerSec * 0.3); 
             if (metrics.o2 < 0) metrics.o2 = 0;
 
-            updateHUD(lossPerSec * 150); 
+            const simulatedPressurePa = lossPerSec * 101325; 
+            updateHUD(simulatedPressurePa); 
 
         }, 300); 
     }
@@ -447,6 +447,7 @@
     function renderNode(nodeId) {
         currentNodeId = nodeId;
         const nodeRaw = storyNodes[nodeId];
+        
         if (nodeRaw.terminal) {
             if (gasLeakSimulationHandle) clearInterval(gasLeakSimulationHandle);
         }
@@ -461,7 +462,7 @@
                 ? nodeRaw.text(metrics)
                 : nodeRaw.text;
         } catch (e) { 
-            nodeText = `>> NODE RENDER ERROR: ${e.message}\nTERMINAL PAUSED.\nATLAS SYS: PROCEEDING TO SAFE STATE.`; 
+            nodeText = `>> NODE RENDER ERROR: ${e.message}\nTERMINAL PAUSED.`; 
         }
 
         if (!nodeText.trim().includes('CRITICAL')) updateHUD(metrics.initialDiffusionRate * 200);
@@ -486,11 +487,15 @@
         
         const sanitizedRaw = rawCmd.replace(/</g, "&lt;").replace(/>/g, "&gt;");
         const cmd = sanitizedRaw.trim().toUpperCase();
-
-        outputDiv.innerHTML += `<span style="color:#e0e0e0">> ${cmd}</span><br>`;
-        inputField.value = '';
-        
         if (cmd.length < 1) return;
+
+        // Isolated DOM Append prevents innerHTML reflow tearing
+        const echoSpan = document.createElement('span');
+        echoSpan.style.color = '#e0e0e0';
+        echoSpan.innerHTML = `> ${cmd}<br>`;
+        outputDiv.appendChild(echoSpan);
+        
+        inputField.value = '';
 
         if (state === 'RESTORE_PROMPT') {
             if (cmd === '1') {
@@ -541,7 +546,6 @@
         if (state !== 'OFF') return; 
         powerButton.classList.add('active');
 
-        // ISOLATION LAYER: Catch hardware audio exceptions that halt the thread.
         try {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (audioCtx) {
@@ -550,7 +554,7 @@
                 playHardwareSwitch();
             }
         } catch (e) {
-            console.warn("ATLAS HARDWARE ERROR: Web Audio API blocked by environment.", e);
+            console.warn("ATLAS HARDWARE ERROR: Web Audio API blocked.", e);
         }
 
         screen.classList.remove('power-loss');
@@ -561,13 +565,10 @@
         setTimeout(() => {
             inputLine.style.display = 'flex';
             
-            // ISOLATION LAYER: Catch local cache exceptions when executing from restricted file paths.
             let hasSave = false;
             try {
                 hasSave = !!localStorage.getItem('archimedes_save');
-            } catch (e) {
-                console.warn("ATLAS CACHE ERROR: Local Storage restricted by environment.");
-            }
+            } catch (e) {}
 
             if (hasSave) {
                 state = 'RESTORE_PROMPT';
@@ -609,7 +610,6 @@
 
     function startStaticNoise() {
         if (!audioCtx) return;
-        // Rigorous integer flooring to prevent Float exception crash.
         const bufferSize = Math.floor(audioCtx.sampleRate * 2); 
         const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
         const data = buffer.getChannelData(0);
@@ -651,7 +651,6 @@
 
     function createKeyNoiseBuffer() {
         if (!audioCtx) return;
-        // Rigorous integer flooring to prevent DOMException on atypical sample rates.
         const bufferSize = Math.floor(audioCtx.sampleRate * 0.06); 
         keyNoiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
         const output = keyNoiseBuffer.getChannelData(0);
@@ -710,7 +709,7 @@
                 }
                 tag += '>';
                 writerLayer.innerHTML += tag;
-                i++; // Advance parser past the closing bracket.
+                i++; 
             } else {
                 writerLayer.innerHTML += formattedText[i];
                 if (formattedText[i] !== " ") playKeyDown();
@@ -735,6 +734,7 @@
             localStorage.setItem('archimedes_save', JSON.stringify({ currentNodeId, metrics }));
         } catch(e) {}
     }
+    
     function loadGame() {
         try {
             const rawData = localStorage.getItem('archimedes_save');
@@ -748,6 +748,7 @@
             }
         } catch(e) {}
     }
+    
     function deleteSave() {
         try {
             localStorage.removeItem('archimedes_save');
