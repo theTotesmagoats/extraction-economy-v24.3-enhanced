@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Terminal Mk XVIII - Archimedes Base</title>
+    <title>Terminal Mk XIX - Archimedes Base</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
@@ -24,7 +24,7 @@
             width: 96vw;
             height: 96vh;
             padding: 40px 40px 80px 40px; 
-            border-radius: 12px;
+            border-radius: 32px; /* INCREASED: Heavy industrial hardware curve */
             box-sizing: border-box;
             box-shadow: inset 0 0 30px #000, 0 0 50px rgba(255, 176, 0, 0.05);
             border: 8px solid #080a0c;
@@ -42,10 +42,10 @@
             border-radius: 50%;
             box-shadow: inset 2px 2px 4px #444, inset -2px -2px 4px #000;
         }
-        .r-tl { top: 12px; left: 12px; }
-        .r-tr { top: 12px; right: 12px; }
-        .r-bl { bottom: 12px; left: 12px; }
-        .r-br { bottom: 12px; right: 12px; }
+        .r-tl { top: 18px; left: 18px; }
+        .r-tr { top: 18px; right: 18px; }
+        .r-bl { bottom: 18px; left: 18px; }
+        .r-br { bottom: 18px; right: 18px; }
 
         #hardware-panel {
             position: absolute;
@@ -103,7 +103,7 @@
             background: #0d0901;
             width: 100%;
             height: 100%;
-            border-radius: 4px; 
+            border-radius: 24px; /* INCREASED: CRT glass curvature */
             padding: 35px;
             box-sizing: border-box;
             border: 2px solid rgba(255, 176, 0, 0.3);
@@ -919,8 +919,10 @@
             infoText += ":: CRYO-FOAM: Rapid-expansion polymer. Plugs micro-fractures. Demands high suit amperage.\n";
             infoText += ":: HALON: Fire suppression gas. Displaces oxygen to suffocate fires. Lethal to biologicals.\n";
             infoText += ":: KINEMATIC SUIT: Motorized EVA gear. Resists high-shear forces but rapidly depletes power.\n";
+            infoText += ":: KINETIC STRIKE: Orbital bombardment utilizing dense projectiles at hypersonic velocities.\n";
             infoText += ":: LOGIC TRUNK: Primary fiber-optic nerve connecting localized hardware to ATLAS.\n";
             infoText += ":: SCRAM: Emergency reactor shutdown via gravity-dropped boron control rods.\n";
+            infoText += ":: VANGUARD: Automated orbital platform stationed in local geosynchronous orbit. Primary defense grid.\n";
             printText(infoText, 15);
             return;
         }
@@ -1221,7 +1223,7 @@
 
     function saveGame() {
         try {
-            if (state === 'HACKING') return; // Prevent caching during the active timer
+            if (state === 'HACKING') return; 
             localStorage.setItem('archimedes_save', JSON.stringify({ currentNodeId, metrics }));
         } catch(e) {}
     }
