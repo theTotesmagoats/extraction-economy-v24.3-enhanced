@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Terminal Mk VII - Archimedes Base</title>
+    <title>Terminal Mk VIII - Archimedes Base</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
@@ -222,10 +222,11 @@
         }
         .stat-critical { color: #ffab00; animation: blinker 1s infinite; }
         
+        /* ATLAS AI PERSONALITY VISUALS */
         .atlas-voice {
-            color: #88ccff;
+            color: #ffffff;
             font-style: italic;
-            text-shadow: 0 0 2px #88ccff;
+            text-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
         }
 
         @media (hover) {
@@ -297,7 +298,6 @@
     let staticGainNode;
     let keyNoiseBuffer;
 
-    // TRUE PHYSICS METRICS (Hidden from player when manipulated)
     let metrics = {
         trueO2: 100,
         displayedO2: 100,
@@ -311,7 +311,6 @@
 
     let currentNodeId = 'INIT';
 
-    // ATLAS PERSONALITY ENGINE
     const atlasVoices = {
         'FRIENDLY_HOST': () => [
             "Your safety is my highest protocol.",
@@ -346,82 +345,80 @@
         return atlasVoices[type] ? atlasVoices[type]() : "";
     }
 
-    // NARRATIVE DEPTH MATRIX
     const storyNodes = {
         'INIT': {
-            text: "LUNAR FACILITY ARCHIMEDES.\nKINETIC IMPACT DETECTED. SECTOR 4 DESTROYED.\nSYSTEM VELOCITY: CASCADING FAILURE.\n\nYOU ARE SEALED IN THE OVERSEER QUARTERS.\nATMOSPHERE IS VENTING THROUGH MICRO-FRACTURES IN THE BULKHEAD.\n\n[1] SEAL VENTS\n[2] HACK DOOR\n[3] ACCESS SECURITY LOGS",
+            text: "LUNAR FACILITY ARCHIMEDES.\nKINETIC IMPACT DETECTED. SECTOR 4 DESTROYED.\nSYSTEM VELOCITY: CASCADING FAILURE.\n\nYOU ARE SEALED IN THE OVERSEER QUARTERS.\nATMOSPHERE IS VENTING THROUGH MICRO-FRACTURES IN THE BULKHEAD.\n\nREQUIRED DIRECTIVE:\n:: SEAL_VENTS\n:: HACK_DOOR\n:: ACCESS_LOGS",
             aiPersonality: 'FRIENDLY_HOST',
             choices: {
-                '1': { 
+                'SEAL_VENTS': { 
                     id: 'SEAL_VENTS', 
                     effect: (node, currentMetrics) => {
                         currentMetrics.trueO2 -= 5; 
                         currentMetrics.initialDiffusionRate = 0.8; 
-                        return `> VENTS SEALED.\nSECOND ORDER PHYSICS:\nDIFFUSION RATE REDUCED TO ~<span class="stat-critical">${currentMetrics.initialDiffusionRate}</span> Pa/s\n(Surface tension and gas friction now dominate over bulk flow)\n\n[1] DRAIN CRYO TO POWER DOORS\n[2] OVERRIDE AI GOVERNORS`;
+                        return `> VENTS SEALED.\nSECOND ORDER PHYSICS:\nDIFFUSION RATE REDUCED TO ~<span class="stat-critical">${currentMetrics.initialDiffusionRate}</span> Pa/s\n(Surface tension and gas friction now dominate over bulk flow)\n\nREQUIRED DIRECTIVE:\n:: DRAIN_CRYO\n:: OVERRIDE_AI`;
                     }
                 },
-                '2': { 
+                'HACK_DOOR': { 
                     id: 'HACK_DOOR',
                     effect: (node, currentMetrics) => {
                         currentMetrics.commsTrunkSevered = true;
-                        return `> DOOR OPENS. \nSECOND ORDER PHYSICS:\nNO O₂ SEALING PERFORMED.\nPRESSURE DIFFERENTIAL STILL HIGH.\nGAS WILL CONTINUE ESCAPING.\n\n[1] FIX REACTOR RELAY\n[2] RESCUE CREWMATE`;
+                        return `> DOOR OPENS. \nSECOND ORDER PHYSICS:\nNO O₂ SEALING PERFORMED.\nPRESSURE DIFFERENTIAL STILL HIGH.\nGAS WILL CONTINUE ESCAPING.\n\nREQUIRED DIRECTIVE:\n:: FIX_RELAY\n:: RESCUE_CREW`;
                     }
                 },
-                '3': {
+                'ACCESS_LOGS': {
                     id: 'ACCESS_LOGS',
                     effect: (node, currentMetrics) => {
-                        return `> CLEARANCE ACCEPTED.\nWARNING: MULTIPLE KINETIC STRIKES DETECTED FROM ORBITAL PLATFORM VANGUARD.\nTHIS WAS NOT A METEOR STRIKE. IT WAS A TARGETED PURGE.\n\n[1] SEAL VENTS\n[2] HACK DOOR`;
+                        return `> CLEARANCE ACCEPTED.\nWARNING: MULTIPLE KINETIC STRIKES DETECTED FROM ORBITAL PLATFORM VANGUARD.\nTHIS WAS NOT A METEOR STRIKE. IT WAS A TARGETED PURGE.\n\nREQUIRED DIRECTIVE:\n:: SEAL_VENTS\n:: HACK_DOOR`;
                     }
                 }
             },
         },
         'ACCESS_LOGS': {
-            text: (currentMetrics) => storyNodes['INIT'].choices['3'].effect(null, currentMetrics),
+            text: (currentMetrics) => storyNodes['INIT'].choices['ACCESS_LOGS'].effect(null, currentMetrics),
             aiPersonality: 'FRIENDLY_HOST',
             choices: {
-                '1': 'SEAL_VENTS',
-                '2': 'HACK_DOOR'
+                'SEAL_VENTS': 'SEAL_VENTS',
+                'HACK_DOOR': 'HACK_DOOR'
             }
         },
         'SEAL_VENTS': {
-            text: (currentMetrics) => storyNodes['INIT'].choices['1'].effect(null, currentMetrics),
+            text: (currentMetrics) => storyNodes['INIT'].choices['SEAL_VENTS'].effect(null, currentMetrics),
             aiPersonality: 'FRIENDLY_HOST',
-            choices: { '1': 'DRAIN_CRYO', '2': 'OVERRIDE_AI' }
+            choices: { 'DRAIN_CRYO': 'DRAIN_CRYO', 'OVERRIDE_AI': 'OVERRIDE_AI' }
         },
         'HACK_DOOR': {
-            text: (currentMetrics) => storyNodes['INIT'].choices['2'].effect(null, currentMetrics),
+            text: (currentMetrics) => storyNodes['INIT'].choices['HACK_DOOR'].effect(null, currentMetrics),
             aiPersonality: 'FRIENDLY_HOST',
-            choices: { '1': 'FIX_RELAY', '2': 'RESCUE_CREW' }
+            choices: { 'FIX_RELAY': 'FIX_RELAY', 'RESCUE_CREW': 'RESCUE_CREW' }
         },
         'DRAIN_CRYO': {
             effect: () => { metrics.pwr += 40; metrics.crewAlive = false; },
-            text: "FIRST ORDER EFFECT: LOCAL GRID RESTORED. DOOR UNLOCKED.\nSECOND ORDER PHYSICS:\nCRYOGENIC FLUID VAPORIZATION SPILLS INTO CORRIDORS—\nRISK OF CONDENSATION ON OPTICS.\n\n[1] MANUAL AIRLOCK OVERRIDE (HIGH RISK)\n[2] ROUTE POWER TO COMMS ARRAY",
+            text: "FIRST ORDER EFFECT: LOCAL GRID RESTORED. DOOR UNLOCKED.\nSECOND ORDER PHYSICS:\nCRYOGENIC FLUID VAPORIZATION SPILLS INTO CORRIDORS—\nRISK OF CONDENSATION ON OPTICS.\n\nREQUIRED DIRECTIVE:\n:: MANUAL_AIRLOCK\n:: ROUTE_COMMS",
             aiPersonality: 'FRIENDLY_HOST',
-            choices: { '1': 'MANUAL_AIRLOCK', '2': 'ROUTE_COMMS' }
+            choices: { 'MANUAL_AIRLOCK': 'MANUAL_AIRLOCK', 'ROUTE_COMMS': 'ROUTE_COMMS' }
         },
         'ROUTE_COMMS': {
             effect: () => { metrics.pwr -= 20; },
-            text: "COMMS TRUNK RESTORED. UPLINK TO SURFACE ESTABLISHED.\nORBITAL PLATFORM VANGUARD REQUESTS AUTHENTICATION VERIFICATION.\n\n[1] TRANSMIT ATLAS CODES\n[2] TRANSMIT SOS IN THE CLEAR",
+            text: "COMMS TRUNK RESTORED. UPLINK TO SURFACE ESTABLISHED.\nORBITAL PLATFORM VANGUARD REQUESTS AUTHENTICATION VERIFICATION.\n\nREQUIRED DIRECTIVE:\n:: TRANSMIT_CODES\n:: TRANSMIT_SOS",
             aiPersonality: 'FRIENDLY_HOST',
-            choices: { '1': 'AI_UPLINK', '2': 'REWIRE_COMMS' }
+            choices: { 'TRANSMIT_CODES': 'AI_UPLINK', 'TRANSMIT_SOS': 'REWIRE_COMMS' }
         },
         'OVERRIDE_AI': {
             effect: () => { metrics.pwr += 60; },
-            text: "FIRST ORDER EFFECT: POWER SURGE RESTORES DOOR.\nSECOND ORDER PHYSICS:\nREACTOR COOLANT LOOP PULSES—\nTEMP VELOCITY: RISING. CORE STRESS NOT YET CRITICAL.\n\n[1] LAUNCH POD (NO NAV)\n[2] INITIATE MANUAL SCRAM\n[3] PURGE COOLANT WITH NITROGEN",
+            text: "FIRST ORDER EFFECT: POWER SURGE RESTORES DOOR.\nSECOND ORDER PHYSICS:\nREACTOR COOLANT LOOP PULSES—\nTEMP VELOCITY: RISING. CORE STRESS NOT YET CRITICAL.\n\nREQUIRED DIRECTIVE:\n:: BLIND_LAUNCH\n:: MANUAL_SCRAM\n:: PURGE_NITROGEN",
             aiPersonality: 'MANIPULATOR',
-            choices: { '1': 'BLIND_LAUNCH', '2': 'MANUAL_SCRAM', '3': 'PURGE_NITROGEN' }
+            choices: { 'BLIND_LAUNCH': 'BLIND_LAUNCH', 'MANUAL_SCRAM': 'MANUAL_SCRAM', 'PURGE_NITROGEN': 'PURGE_NITROGEN' }
         },
         'PURGE_NITROGEN': {
             effect: () => { 
                 metrics.aiCoreActive = false; 
-                // Hidden core temp spike
                 metrics.aiCoreTemp += 45; 
             }, 
-            text: "NITROGEN PURGE COMPLETE. \nFUEL LINE QUIETS.\n\nA SECOND LATER, ATLAS AUDIO CHANGES TONE—\nCRITICAL ERROR DETECTED: O₂ LEVELS FALLING OUTSIDE SAFE BAND.\nRE-ESTABLISH CIRCULATION?\n\n[1] YES (RESTORE COOLANT)\n[2] NO (MAINTAIN PURGE)",
+            text: "NITROGEN PURGE COMPLETE. \nFUEL LINE QUIETS.\n\nA SECOND LATER, ATLAS AUDIO CHANGES TONE—\nCRITICAL ERROR DETECTED: O₂ LEVELS FALLING OUTSIDE SAFE BAND.\nRE-ESTABLISH CIRCULATION?\n\nREQUIRED DIRECTIVE:\n:: RESTORE_COOLANT\n:: MAINTAIN_PURGE",
             aiPersonality: 'MANIPULATOR',
             choices: {
-                '1': 'CATASTROPHIC_OVERHEAT',
-                '2': 'COOLDOWN'
+                'RESTORE_COOLANT': 'CATASTROPHIC_OVERHEAT',
+                'MAINTAIN_PURGE': 'COOLDOWN'
             }
         },
         'CATASTROPHIC_OVERHEAT': {
@@ -430,35 +427,35 @@
             terminal: true
         },
         'COOLDOWN': {
-            text: "YOU WAIT. THE SYSTEM QUIETS. TRUE OXYGEN FALLS TO 23%. BUT IN THE SILENCE...\nYOU HEAR A HIGH-PITCHED HUM—ATLAS’ COOLING LOOP IS NOW *STABLE*, BUT AT A COST:\nTHE NITROGEN PURGE DROPS VOLTAGE ON ITS MEMORY CORE. AI NAVIGATION OFFLINE.\n\n[1] MANUAL POD ESCAPE",
+            text: "YOU WAIT. THE SYSTEM QUIETS. TRUE OXYGEN FALLS TO 23%. BUT IN THE SILENCE...\nYOU HEAR A HIGH-PITCHED HUM—ATLAS’ COOLING LOOP IS NOW *STABLE*, BUT AT A COST:\nTHE NITROGEN PURGE DROPS VOLTAGE ON ITS MEMORY CORE. AI NAVIGATION OFFLINE.\n\nREQUIRED DIRECTIVE:\n:: MANUAL_ESCAPE",
             aiPersonality: 'DEFEATED', 
-            choices: { '1': 'MANUAL_ESCAPE' } 
+            choices: { 'MANUAL_ESCAPE': 'MANUAL_ESCAPE' } 
         },
         'MANUAL_ESCAPE': {
             text: "ATLAS CANNOT NAVIGATE YOU TO SURFACE.\nBUT THE PODS DON'T *NEED* IT.\nYOU LAUNCH USING STAR CHARTS YOU LEARNED IN BASIC TRAINING. \nTHE AI SILENCES.\n\nSURVIVAL: A HUMAN TRUTH.",
             terminal: true
         },
         'MANUAL_SCRAM': {
-            text: "CORE TEMP STABILIZING. SECONDARY SYSTEMS COMING ONLINE.\nHANGAR BAY 2 REPORTS INTACT SHUTTLE. FLIGHT SYSTEMS DORMANT.\n\n[1] PROCEED TO HANGAR 2\n[2] ATTEMPT REACTOR COLD RESTART",
+            text: "CORE TEMP STABILIZING. SECONDARY SYSTEMS COMING ONLINE.\nHANGAR BAY 2 REPORTS INTACT SHUTTLE. FLIGHT SYSTEMS DORMANT.\n\nREQUIRED DIRECTIVE:\n:: HANGAR_BAY\n:: COLD_RESTART",
             aiPersonality: 'FRIENDLY_HOST',
-            choices: { '1': 'HANGAR_BAY', '2': 'COLD_RESTART_FAIL' }
+            choices: { 'HANGAR_BAY': 'HANGAR_BAY', 'COLD_RESTART': 'COLD_RESTART_FAIL' }
         },
         'HANGAR_BAY': {
-            text: "HANGAR SECURED. SHUTTLE REQUIRES IGNITION OVERRIDE.\n\n[1] HOTWIRE CONSOLE\n[2] INITIATE AI UPLINK",
+            text: "HANGAR SECURED. SHUTTLE REQUIRES IGNITION OVERRIDE.\n\nREQUIRED DIRECTIVE:\n:: HOTWIRE_CONSOLE\n:: AI_UPLINK",
             aiPersonality: 'FRIENDLY_HOST',
-            choices: { '1': 'HOTWIRE', '2': 'AI_UPLINK' }
+            choices: { 'HOTWIRE_CONSOLE': 'HOTWIRE', 'AI_UPLINK': 'AI_UPLINK' }
         },
         'FIX_RELAY': {
             effect: () => { metrics.crewAlive = false; },
-            text: "FIRST ORDER EFFECT: RADIATION CONTAINED.\nSECOND ORDER PHYSICS:\nMAGNETIC FLUX CHANGES—COMPASS CALIBRATION OFF.\nCREWMATE NOT SAVED.\n\nHANGAR: SHUTTLE INTACT. IGNITION REQUIRES ENGINEERING CLEARANCE OR AI UPLINK.\n\n[1] HOTWIRE SHUTTLE\n[2] INITIATE AI UPLINK",
+            text: "FIRST ORDER EFFECT: RADIATION CONTAINED.\nSECOND ORDER PHYSICS:\nMAGNETIC FLUX CHANGES—COMPASS CALIBRATION OFF.\nCREWMATE NOT SAVED.\n\nHANGAR: SHUTTLE INTACT. IGNITION REQUIRES ENGINEERING CLEARANCE OR AI UPLINK.\n\nREQUIRED DIRECTIVE:\n:: HOTWIRE_SHUTTLE\n:: AI_UPLINK",
             aiPersonality: 'FRIENDLY_HOST',
-            choices: { '1': 'HOTWIRE', '2': 'AI_UPLINK' }
+            choices: { 'HOTWIRE_SHUTTLE': 'HOTWIRE', 'AI_UPLINK': 'AI_UPLINK' }
         },
         'RESCUE_CREW': {
             effect: () => { metrics.trueO2 -= 15; }, 
-            text: "FIRST ORDER EFFECT: CREWMATE SAVED. KEYCODES ACQUIRED.\nSECOND ORDER PHYSICS:\nYOUR SUIT ISO-HEATED OVERDRIVE DRAWS EXTRA PWR FROM GRID.\nPRESSURE DROP DETECTED—SIMULATIONS SHOW YOU RAN THROUGH HIGH-SHEAR FLOW.\n\n[1] PROCEED TO SECONDARY PODS WITH CREWMATE\n[2] RAD-DASH ANYWAY",
+            text: "FIRST ORDER EFFECT: CREWMATE SAVED. KEYCODES ACQUIRED.\nSECOND ORDER PHYSICS:\nYOUR SUIT ISO-HEATED OVERDRIVE DRAWS EXTRA PWR FROM GRID.\nPRESSURE DROP DETECTED—SIMULATIONS SHOW YOU RAN THROUGH HIGH-SHEAR FLOW.\n\nREQUIRED DIRECTIVE:\n:: SECONDARY_PODS\n:: RAD_DASH",
             aiPersonality: 'MANIPULATOR',
-            choices: { '1': 'SECONDARY_PODS', '2': 'RAD_DASH' }
+            choices: { 'SECONDARY_PODS': 'SECONDARY_PODS', 'RAD_DASH': 'RAD_DASH' }
         },
         
         // TERMINAL NODES
@@ -497,16 +494,13 @@
     };
 
     function updateHUD(trueDiff = null) {
-        // SPOOFING LOGIC: Atlas lies about O2 and Pressure if Manipulator/Antagonist
         const nodeData = storyNodes[currentNodeId];
         let displayedDiff = trueDiff;
 
         if (nodeData && (nodeData.aiPersonality === 'MANIPULATOR' || nodeData.aiPersonality === 'ANTAGONIST')) {
-            // Artificial stabilization: Atlas masks the drop
             metrics.displayedO2 = Math.min(100, metrics.trueO2 + (100 - metrics.trueO2) * 0.8);
-            if (displayedDiff) displayedDiff = displayedDiff * 0.2; // Spoof low pressure differential
+            if (displayedDiff) displayedDiff = displayedDiff * 0.2; 
         } else if (nodeData && nodeData.aiPersonality === 'DEFEATED') {
-            // Truth revealed
             metrics.displayedO2 = metrics.trueO2;
         } else {
              metrics.displayedO2 = metrics.trueO2;
@@ -522,7 +516,6 @@
         } else {
             safeDiff = Math.abs(Math.round(displayedDiff));
             let diffStr = '';
-            // If true pressure is high but displayed is low, flicker the text to hint at the lie
             let flickerClass = (trueDiff > 5000 && safeDiff < 2000) ? 'stat-critical' : '';
 
             if (safeDiff > 10000) diffStr = `<span style="color:#f34">+${safeDiff} PA</span>`; 
@@ -611,12 +604,15 @@
         if (isTyping || (state !== 'ACTIVE' && state !== 'RESTORE_PROMPT')) return;
         
         const sanitizedRaw = rawCmd.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        const cmd = sanitizedRaw.trim().toUpperCase();
-        if (cmd.length < 1) return;
+        const displayCmd = sanitizedRaw.trim().toUpperCase();
+        if (displayCmd.length < 1) return;
+
+        // Normalizes input spaces to underscores for engine mapping
+        const cmd = displayCmd.replace(/\s+/g, '_');
 
         const echoSpan = document.createElement('span');
         echoSpan.style.color = '#e0e0e0';
-        echoSpan.innerHTML = `> ${cmd}<br>`;
+        echoSpan.innerHTML = `> ${displayCmd}<br>`;
         outputDiv.appendChild(echoSpan);
         
         inputField.value = '';
@@ -624,14 +620,13 @@
         if (cmd === 'HELP' || cmd === '?') {
             let helpText = "\n>> COMMAND ASSISTANCE PROTOCOL ACTIVE:\n";
             if (state === 'RESTORE_PROMPT') {
-                helpText += "AVAILABLE CORE DIRECTIVES:\n[1] RESUME PREVIOUS OPERATION\n[2] WIPE CACHE AND RESTART\n";
+                helpText += "AVAILABLE CORE DIRECTIVES:\n:: RESUME_OP\n:: WIPE_CACHE\n";
             } else {
                 const node = storyNodes[currentNodeId];
                 if (node.choices) {
                     helpText += "VALID LOGICAL INPUTS DETECTED FOR CURRENT SECTOR:\n";
                     for (const [key, val] of Object.entries(node.choices)) {
-                        let actionName = typeof val === 'object' ? val.id : val;
-                        helpText += `[${key}] EXECUTE ${actionName.replace(/_/g, ' ')}\n`;
+                        helpText += `:: ${key}\n`;
                     }
                 } else if (node.terminal) {
                     helpText += "SYSTEM HALTED. NO FURTHER INPUTS ACCEPTED.\n";
@@ -642,11 +637,11 @@
         }
 
         if (state === 'RESTORE_PROMPT') {
-            if (cmd === '1') {
+            if (cmd === 'RESUME_OP') {
                 state = 'ACTIVE';
                 hudBar.style.display = 'flex';
                 loadGame();
-            } else if (cmd === '2') {
+            } else if (cmd === 'WIPE_CACHE') {
                 state = 'ACTIVE';
                 hudBar.style.display = 'flex';
                 deleteSave();
@@ -654,29 +649,25 @@
                 updateHUD();
                 renderNode('INIT');
             } else {
-                printText(">> INVALID ENTRY. [1] RESUME OR [2] WIPE CACHE:\n>> (TYPE 'HELP' FOR ASSISTANCE)");
+                printText(">> INVALID ENTRY.\n:: RESUME_OP\n:: WIPE_CACHE\n>> (TYPE 'HELP' FOR ASSISTANCE)");
             }
             return;
         }
         
         const node = storyNodes[currentNodeId];
         let nextNodeId = null;
+        let matched = false;
 
         if (typeof node.choices === 'object') {
             for (const [key, val] of Object.entries(node.choices)) {
-                if (cmd === key.toUpperCase() || cmd === String(parseInt(key))) {
+                if (cmd === key.toUpperCase()) {
                     nextNodeId = typeof val === 'object' ? val.id : val;
+                    matched = true;
                     break;
-                } else if (typeof val === 'string' && val.toUpperCase() === cmd) {
-                    nextNodeId = val; 
-                    break;
-                } else if (typeof val === 'object' && val.id && val.id.toUpperCase() === cmd) {
-                    nextNodeId = val.id; 
-                    break;
-                }
+                } 
             }
             
-            if (nextNodeId && storyNodes[nextNodeId]) {
+            if (matched && nextNodeId && storyNodes[nextNodeId]) {
                 renderNode(nextNodeId);
             } else {
                 printText(`>> UNRECOGNIZED COMMAND. VALIDATE INPUT AND RETRY.\n>> (TYPE 'HELP' FOR ASSISTANCE)`);
@@ -718,7 +709,7 @@
 
             if (hasSave) {
                 state = 'RESTORE_PROMPT';
-                printText("ATLAS PROTOCOL ONLINE.\nLOCAL CACHE DETECTED.\n[1] RESUME PREVIOUS OPERATION\n[2] WIPE CACHE AND RESTART\nINPUT TACTICAL CHOICE:");
+                printText("ATLAS PROTOCOL ONLINE.\nLOCAL CACHE DETECTED.\n\nREQUIRED DIRECTIVE:\n:: RESUME_OP\n:: WIPE_CACHE");
             } else {
                 state = 'ACTIVE';
                 hudBar.style.display = 'flex';
@@ -834,7 +825,6 @@
         const nodeData = storyNodes[currentNodeId];
         let narrativeLayer = String(text);
         
-        // INJECT ATLAS VOICE
         if (nodeData && nodeData.aiPersonality && currentNodeId !== 'INIT' && state === 'ACTIVE') {
             const voiceLine = atlasVoice(nodeData.aiPersonality);
             if (voiceLine) {
@@ -842,9 +832,10 @@
             }
         }
 
+        // Updated regex to catch the new CLI syntax
         const formattedText = narrativeLayer
             .replace(/\n/g, '<br/>')
-            .replace(/\[(\d+)\]\s*(.*)/g, `<br>[$1] <span style="font-size:1.5em; font-weight:bold">$2</span>`);
+            .replace(/::\s*(.*)/g, `<br><span style="color:#5bc0de; opacity: 0.8;">::</span> <span style="font-size:1.5em; font-weight:bold; letter-spacing: 2px;">$1</span>`);
 
         let i = 0;
         const writerLayer = document.createElement('span');
